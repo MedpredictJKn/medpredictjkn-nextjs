@@ -1,0 +1,81 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Global text styling - darker, less bright colors */
+p, span, div, li, h1, h2, h3, h4, h5, h6 {
+  color: #2d3748; /* Dark gray instead of light colors */
+}
+
+/* Links styling - EXCEPT when inside buttons/styled links */
+a:not([class*="bg-"]):not([class*="text-white"]) {
+  color: #2c5aa0 !important;
+}
+
+a:not([class*="bg-"]):not([class*="text-white"]):hover {
+  color: #1e3a5f !important;
+}
+
+/* Styled links (like buttons) with bg-blue - force white text */
+a.bg-blue-600, a.bg-blue-700, a[class*="bg-blue"] {
+  color: #ffffff !important;
+}
+
+a.bg-blue-600:hover, a.bg-blue-700:hover, a[class*="bg-blue"]:hover {
+  color: #ffffff !important;
+}
+
+/* Form inputs styling */
+input, textarea, select {
+  color: #2d3748 !important;
+  background-color: #ffffff;
+  border-color: #cbd5e0;
+}
+
+input::placeholder, textarea::placeholder {
+  color: #718096 !important;
+}
+
+/* Button text styling - white text */
+button {
+  color: #ffffff !important;
+}
+
+button:hover, button:active {
+  color: #ffffff !important;
+}
+
+/* Headings darker */
+h1, h2, h3, h4, h5, h6 {
+  color: #1a202c !important;
+}
+
+/* Focus states */
+input:focus, textarea:focus, select:focus {
+  border-color: #3182ce !important;
+  box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.1) !important;
+}
+
