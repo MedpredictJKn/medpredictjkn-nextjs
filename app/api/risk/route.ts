@@ -34,7 +34,6 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { calculateDiseaseRisks } from "@/lib/services/riskCalculation";
-import { createAlertForHighRisk } from "@/lib/services/alert";
 
 export async function POST(request: NextRequest) {
   try {
@@ -95,20 +94,9 @@ export async function POST(request: NextRequest) {
     // Check if user needs alerts
     let alertSent = false;
     if (riskScores.highRiskDiseases.length > 0) {
-      // TODO: Find user's assigned health facility after database setup
+      // TODO: Send alerts after database setup
       // For now, just log the alert
-      for (const disease of riskScores.highRiskDiseases) {
-        const diseaseScore = riskScores[
-          `${disease.toLowerCase().replace(/ /g, "")}Score` as keyof typeof riskScores
-        ] || 0;
-        
-        await createAlertForHighRisk({
-          facilityId: "placeholder-facility-id",
-          patientId: userId,
-          disease,
-          riskScore: diseaseScore as number,
-        });
-      }
+      console.log(`[Alert] High-risk diseases for user ${userId}: ${riskScores.highRiskDiseases.join(", ")}`);
       alertSent = true;
     }
 

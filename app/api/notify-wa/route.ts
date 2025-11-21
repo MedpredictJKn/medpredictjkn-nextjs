@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { sendWhatsAppMessage } from "@/lib/services/whatsapp";
+import { sendWhatsAppNotification } from "@/lib/services/wa";
 
 interface WhatsAppPayload {
   to: string;
@@ -33,14 +33,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Send WhatsApp message
-    const result = await sendWhatsAppMessage(body.to, body.body);
+    const result = await sendWhatsAppNotification({
+      phoneNumber: body.to,
+      message: body.body,
+    });
 
-    if (result.sent) {
+    if (result.success) {
       return NextResponse.json(
         {
           success: true,
           message: "Pesan berhasil dikirim",
-          data: result.message,
+          data: { messageId: result.messageId },
         },
         { status: 200 }
       );

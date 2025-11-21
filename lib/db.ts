@@ -17,9 +17,8 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 // Add connection error handling
-prisma.$on("error", (e) => {
-  console.error("[Prisma Error]", e);
-});
+// Note: Prisma event handlers may vary by version
+// Using try-catch in actual database calls instead
 
 // Disconnect on process exit
 if (typeof global !== "undefined") {
