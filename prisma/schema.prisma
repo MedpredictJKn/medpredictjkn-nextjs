@@ -7,11 +7,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
-  // Connection pool configuration
-  // pool_size=20 untuk increase dari default 10
-  // connection_timeout=60s untuk timeout handling
-  // idle_in_transaction_session_timeout=30s untuk cleanup idle connections
 }
 
 model User {
