@@ -6,6 +6,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendWhatsAppNotification } from "@/lib/services/wa";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 interface WhatsAppPayload {
   to: string;
   body: string;
@@ -106,5 +109,3 @@ export async function GET() {
     );
   }
 }
-
-export const runtime = "nodejs";

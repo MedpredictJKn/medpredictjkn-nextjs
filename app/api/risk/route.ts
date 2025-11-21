@@ -35,6 +35,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { calculateDiseaseRisks } from "@/lib/services/riskCalculation";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 export async function POST(request: NextRequest) {
   try {
     // Get JWT token from headers

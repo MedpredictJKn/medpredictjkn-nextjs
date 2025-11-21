@@ -5,6 +5,7 @@ import { ChatPayload, ApiResponse } from "@/types";
 
 // Pindahkan ke sini, setelah import
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 interface ChatResponse {
   id: string;
