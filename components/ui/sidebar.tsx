@@ -1,3 +1,5 @@
+"use client";
+
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
@@ -8,9 +10,10 @@ interface SidebarProps {
     onLogout: () => void;
     userName?: string;
     userEmail?: string;
+    profilePhoto?: string;
 }
 
-export function Sidebar({ onLogout, userName, userEmail }: SidebarProps) {
+export function Sidebar({ onLogout, userName, userEmail, profilePhoto }: SidebarProps) {
     const pathname = usePathname();
 
     const navItems = [
@@ -34,30 +37,33 @@ export function Sidebar({ onLogout, userName, userEmail }: SidebarProps) {
     const isActive = (href: string) => pathname === href;
 
     return (
-        <aside className="fixed left-0 top-0 h-screen w-64 bg-white border-r border-gray-100 flex flex-col shadow-sm">
-            {/* Logo Section - Match Dashboard Header */}
-            <div className="border-b border-gray-100 bg-white/80 backdrop-blur-sm px-6 py-4 h-20 flex items-center gap-3 group">
-                <Link href="/dashboard" className="flex items-center gap-3 group w-full h-full">
+        <aside className="fixed left-0 top-0 h-screen w-64 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-r border-white/10 flex flex-col backdrop-blur-xl overflow-hidden">
+            {/* Background Effects */}
+            <div className="absolute top-20 left-0 w-80 h-80 bg-purple-500/15 rounded-full blur-3xl pointer-events-none"></div>
+            <div className="absolute bottom-20 right-0 w-80 h-80 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none"></div>
+
+            {/* Logo Section */}
+            <div className="h-[90px] px-6 flex items-center justify-center gap-2 relative z-10">
+                <Link href="/dashboard" className="flex items-center justify-center gap-1.5 w-full h-full">
                     <div className="shrink-0">
                         <Image
                             src="/images/medpredictjkn.png"
                             alt="MedPredict"
-                            width={32}
-                            height={32}
+                            width={50}
+                            height={50}
                             className="object-contain"
                         />
                     </div>
-                    <div className="flex-1 min-w-0">
-                        <h2 className="text-sm font-bold text-gray-900 leading-tight tracking-tight">
-                            <span style={{ color: "#123c70" }}>Medpredict</span><span style={{ color: "#76c04a" }}>JKn</span>
+                    <div className="flex-1 min-w-0 text-center">
+                        <h2 className="text-xl font-bold text-white leading-tight tracking-tight">
+                            <span style={{ color: "#123c70", textShadow: "0 2px 8px rgba(18, 60, 112, 0.5)" }}>Medpredict</span><span style={{ color: "#76c04a", textShadow: "0 2px 8px rgba(118, 192, 74, 0.5)" }}>JKn</span>
                         </h2>
-                        <p className="text-xs text-gray-500 font-medium mt-0.5">Health Prediction</p>
                     </div>
                 </Link>
             </div>
 
             {/* Navigation */}
-            <nav className="flex-1 px-3 py-6 space-y-1.5 overflow-y-auto border-t border-gray-200">
+            <nav className="flex-1 px-4 py-3 space-y-2 overflow-y-auto relative z-10">
                 {navItems.map((item) => {
                     const Icon = item.icon;
                     const active = isActive(item.href);
@@ -66,10 +72,10 @@ export function Sidebar({ onLogout, userName, userEmail }: SidebarProps) {
                             key={item.href}
                             href={item.href}
                             className={cn(
-                                'flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-all duration-200 relative',
+                                'flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-all duration-200',
                                 active
-                                    ? 'bg-blue-50 text-blue-600 border-l-4 border-blue-600 shadow-sm'
-                                    : 'text-gray-700 hover:bg-gray-50 border-l-4 border-transparent hover:text-blue-600'
+                                    ? 'bg-white/10 text-blue-400 border border-white/20 shadow-lg shadow-blue-500/10'
+                                    : 'text-gray-400 hover:bg-white/5 hover:text-white border border-transparent'
                             )}
                         >
                             <Icon className="w-5 h-5 shrink-0" />
@@ -80,22 +86,37 @@ export function Sidebar({ onLogout, userName, userEmail }: SidebarProps) {
             </nav>
 
             {/* User Section */}
-            <div className="border-t border-gray-100 p-3 space-y-3 bg-white">
+            <div className="p-4 space-y-3 border-t border-white/10 relative z-10">
                 {/* User Info */}
                 {userName && (
-                    <Link href="/profil" className="block px-4 py-3.5 bg-linear-to-br from-blue-50 to-indigo-50 rounded-lg hover:from-blue-100 hover:to-indigo-100 transition-all duration-200 border border-blue-100 hover:border-blue-200 cursor-pointer group shadow-sm hover:shadow-md">
-                        <p className="text-xs text-blue-700 font-bold uppercase tracking-wider">Pengguna Aktif</p>
-                        <p className="text-sm font-bold text-gray-900 mt-1.5 truncate group-hover:text-blue-600 transition-colors">{userName}</p>
-                        {userEmail && (
-                            <p className="text-xs text-gray-600 mt-1 truncate group-hover:text-blue-600 transition-colors">{userEmail}</p>
-                        )}
+                    <Link href="/profil" className="block px-4 py-4 bg-gradient-to-br from-blue-500/20 to-cyan-500/10 rounded-lg hover:from-blue-500/30 hover:to-cyan-500/20 transition-all duration-200 border border-blue-400/30 hover:border-blue-400/50 cursor-pointer group">
+                        <div className="flex items-center gap-3 mb-3">
+                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center shrink-0 shadow-lg shadow-blue-500/30 group-hover:shadow-blue-500/50 transition-all overflow-hidden">
+                                {profilePhoto ? (
+                                    <img
+                                        src={profilePhoto}
+                                        alt={userName}
+                                        className="w-full h-full object-cover"
+                                    />
+                                ) : (
+                                    <span className="text-white font-bold text-base">{userName.charAt(0).toUpperCase()}</span>
+                                )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm font-bold text-white truncate group-hover:text-blue-200 transition-colors">{userName}</p>
+                                {userEmail && (
+                                    <p className="text-xs text-gray-300 truncate group-hover:text-gray-100 transition-colors">{userEmail}</p>
+                                )}
+                            </div>
+                        </div>
+                        <p className="text-xs text-blue-200 font-semibold uppercase tracking-widest">✓ Pengguna Aktif</p>
                     </Link>
                 )}
 
-                {/* Action Buttons */}
+                {/* Logout Button */}
                 <button
                     onClick={onLogout}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg font-medium transition-all duration-200 border border-transparent hover:border-red-200"
+                    className="w-full flex items-center gap-3 px-4 py-3 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg font-medium transition-all duration-200 border border-red-500/20 hover:border-red-500/30"
                 >
                     <LogOut className="w-5 h-5 shrink-0" />
                     <span className="text-sm">Keluar</span>

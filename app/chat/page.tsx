@@ -2,9 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Sidebar } from "@/components/ui/sidebar";
 import { Input } from "@/components/ui/input";
-import { AlertCircle, Send, MessageCircle, Loader, User, Bot } from "lucide-react";
+import { AlertCircle, Send, MessageCircle, User, Bot, ArrowLeft, Loader } from "lucide-react";
 
 interface User {
     id: string;
@@ -22,11 +21,10 @@ interface Message {
 
 export default function ChatPage() {
     const router = useRouter();
-    const [user, setUser] = useState<User | null>(null);
+    const [_user, setUser] = useState<User | null>(null);
     const [messages, setMessages] = useState<Message[]>([]);
     const [inputValue, setInputValue] = useState("");
     const [isLoading, setIsLoading] = useState(false);
-    const [isCheckingAuth, setIsCheckingAuth] = useState(true);
     const [error, setError] = useState("");
     const [_token, setToken] = useState("");
 
@@ -48,8 +46,6 @@ export default function ChatPage() {
                 setUser(null);
             }
         }
-
-        setIsCheckingAuth(false);
     }, [router]);
 
     const handleSendMessage = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -112,49 +108,41 @@ export default function ChatPage() {
         }
     };
 
-    const handleLogout = () => {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        router.push("/auth/login");
-    };
-
-    if (isCheckingAuth) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-slate-900 via-slate-800 to-slate-900">
-                <div className="text-center space-y-4">
-                    <div className="inline-flex h-12 w-12 animate-spin rounded-full border-4 border-blue-200 border-t-blue-500"></div>
-                    <p className="text-gray-400 font-medium">Memverifikasi akses...</p>
-                </div>
-            </div>
-        );
-    }
-
     return (
-        <div className="min-h-screen bg-linear-to-br from-slate-900 via-slate-800 to-slate-900 flex">
-            {/* Sidebar */}
-            <Sidebar onLogout={handleLogout} userName={user?.name} userEmail={user?.email} />
+        <div className="min-h-screen bg-linear-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col relative overflow-hidden">
+            {/* Background Effects */}
+            <div className="fixed top-0 left-1/4 w-96 h-96 bg-purple-500/15 rounded-full blur-3xl pointer-events-none z-0"></div>
+            <div className="fixed bottom-0 right-1/4 w-96 h-96 bg-pink-500/15 rounded-full blur-3xl pointer-events-none z-0"></div>
 
-            {/* Chat Container */}
-            <main className="flex-1 ml-64 flex flex-col">
-                {/* Header */}
-                <header className="sticky top-0 z-40 backdrop-blur-xl bg-white/10 border-b border-white/10">
-                    <div className="px-8 py-6 flex items-center justify-between">
+            {/* Header */}
+            <header className="sticky top-0 z-40 backdrop-blur-xl bg-white/5 border-b border-white/10">
+                <div className="h-[70px] px-8 flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <button
+                            onClick={() => router.back()}
+                            className="p-2 hover:bg-white/10 rounded-lg transition-all text-gray-400 hover:text-white"
+                        >
+                            <ArrowLeft className="w-5 h-5" />
+                        </button>
                         <div className="flex items-center gap-3">
-                            <div className="bg-linear-to-r from-purple-500 to-pink-500 p-2.5 rounded-xl">
-                                <MessageCircle className="w-5 h-5 text-white" />
+                            <div className="bg-linear-to-r from-purple-500 to-pink-500 p-2 rounded-lg">
+                                <MessageCircle className="w-4 h-4 text-white" />
                             </div>
                             <div>
-                                <h1 className="text-3xl font-bold bg-linear-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Chat dengan AI</h1>
-                                <p className="text-sm text-gray-400 mt-1">Tanyakan pertanyaan kesehatan Anda</p>
+                                <h1 className="text-2xl font-bold bg-linear-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                                    Chat dengan AI
+                                </h1>
+                                <p className="text-xs text-gray-400 mt-0.5">Tanyakan pertanyaan kesehatan Anda</p>
                             </div>
                         </div>
                     </div>
-                </header>
+                </div>
+            </header>
 
-                {/* Main Chat Area */}
-                <div className="flex-1 flex flex-col p-8">
-                    {/* Empty State */}
-                    {messages.length === 0 && (
+            {/* Main Chat Area */}
+            <div className="flex-1 flex flex-col p-8 relative z-10">
+                {/* Empty State */}
+                {messages.length === 0 && (
                     <div className="flex-1 flex items-center justify-center mb-8">
                         <div className="text-center space-y-6">
                             <div className="flex justify-center">
@@ -198,8 +186,8 @@ export default function ChatPage() {
                             >
                                 <div className={`flex gap-3 max-w-2xl ${message.type === "user" ? "flex-row-reverse" : ""}`}>
                                     <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-white text-sm font-bold ${message.type === "user"
-                                            ? "bg-linear-to-br from-blue-600 to-cyan-600"
-                                            : "bg-linear-to-br from-purple-600 to-pink-600"
+                                        ? "bg-linear-to-br from-blue-600 to-cyan-600"
+                                        : "bg-linear-to-br from-purple-600 to-pink-600"
                                         }`}>
                                         {message.type === "user" ? (
                                             <User className="w-4 h-4" />
@@ -209,8 +197,8 @@ export default function ChatPage() {
                                     </div>
                                     <div>
                                         <div className={`rounded-2xl p-4 backdrop-blur-lg border ${message.type === "user"
-                                                ? "bg-linear-to-br from-blue-600 to-cyan-600 text-white border-blue-500/20"
-                                                : "bg-white/10 text-white border-white/20"
+                                            ? "bg-linear-to-br from-blue-600 to-cyan-600 text-white border-blue-500/20"
+                                            : "bg-white/10 text-white border-white/20"
                                             }`}>
                                             <p className="text-sm leading-relaxed whitespace-pre-wrap">
                                                 {message.text}
@@ -279,8 +267,7 @@ export default function ChatPage() {
                 <div className="text-center text-sm text-gray-500 mt-4">
                     <p>Informasi dari AI mungkin tidak 100% akurat. Konsultasikan dengan dokter untuk diagnosis medis.</p>
                 </div>
-                </div>
-            </main>
+            </div>
         </div>
     );
 }

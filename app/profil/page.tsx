@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Sidebar } from "@/components/ui/sidebar";
-import { Camera, ArrowLeft, User, Mail, Phone } from "lucide-react";
+import { Camera, User, Mail, Phone } from "lucide-react";
 
 interface UserData {
     id: string;
@@ -17,10 +17,10 @@ interface UserData {
 export default function ProfilPage() {
     const router = useRouter();
     const [user, setUser] = useState<UserData | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
     const [photoPreview, setPhotoPreview] = useState<string>("");
 
     useEffect(() => {
+        let isMounted = true;
         const storedUser = localStorage.getItem("user");
         if (!storedUser) {
             router.push("/auth/login");
@@ -29,13 +29,20 @@ export default function ProfilPage() {
 
         try {
             const userData = JSON.parse(storedUser);
-            setUser(userData);
-            if (userData.profilePhoto) {
-                setPhotoPreview(userData.profilePhoto);
+            if (isMounted) {
+                // eslint-disable-next-line react-hooks/set-state-in-effect
+                setUser(userData);
+                if (userData.profilePhoto) {
+                    setPhotoPreview(userData.profilePhoto);
+                }
             }
-        } finally {
-            setIsLoading(false);
+        } catch (err) {
+            console.error("Error parsing user data:", err);
         }
+
+        return () => {
+            isMounted = false;
+        };
     }, [router]);
 
     const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -59,39 +66,27 @@ export default function ProfilPage() {
         router.push("/auth/login");
     };
 
-    if (isLoading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-slate-900 via-slate-800 to-slate-900">
-                <div className="text-center space-y-4">
-                    <div className="inline-flex h-12 w-12 animate-spin rounded-full border-4 border-blue-200 border-t-blue-500"></div>
-                    <p className="text-gray-300 font-medium">Memuat profil...</p>
-                </div>
-            </div>
-        );
-    }
-
     return (
         <div className="min-h-screen bg-linear-to-br from-slate-900 via-slate-800 to-slate-900 flex">
+            {/* Background Effects */}
+            <div className="fixed top-0 left-1/4 w-96 h-96 bg-purple-500/15 rounded-full blur-3xl pointer-events-none z-0"></div>
+            <div className="fixed bottom-0 right-1/4 w-96 h-96 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none z-0"></div>
+
             {/* Sidebar */}
-            <Sidebar onLogout={handleLogout} userName={user?.name} userEmail={user?.email} />
+            <Sidebar onLogout={handleLogout} userName={user?.name} userEmail={user?.email} profilePhoto={user?.profilePhoto} />
 
             {/* Main Content */}
-            <main className="flex-1 ml-64">
+            <main className="flex-1 ml-64 relative z-10">
                 {/* Header */}
-                <header className="sticky top-0 z-40 backdrop-blur-xl bg-white/10 border-b border-white/10">
-                    <div className="px-8 py-6 flex items-center justify-between">
-                        <Link
-                            href="/dashboard"
-                            className="inline-flex items-center gap-2 text-gray-400 hover:text-white font-medium transition-colors"
-                        >
-                            <ArrowLeft className="w-4 h-4" />
-                            Kembali
-                        </Link>
+                <header className="sticky top-0 z-40 backdrop-blur-xl bg-white/5 border-b border-white/10">
+                    <div className="h-[70px] px-8 flex items-center justify-between">
                         <div>
-                            <h1 className="text-3xl font-bold bg-linear-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+                            <h1 className="text-2xl font-bold bg-linear-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
                                 Profil Saya
                             </h1>
-                            <p className="text-sm text-gray-400 mt-2">Kelola informasi pribadi dan profil Anda</p>
+                            <p className="text-xs text-gray-400 mt-0.5">
+                                Kelola informasi pribadi dan profil Anda
+                            </p>
                         </div>
                     </div>
                 </header>
@@ -100,9 +95,8 @@ export default function ProfilPage() {
                 <div className="p-8">
                     <div className="max-w-4xl mx-auto space-y-6">
                         {/* Profile Header Card */}
-                        <div className="relative overflow-hidden rounded-3xl bg-linear-to-br from-white/10 to-white/5 backdrop-blur-lg border border-white/20 p-8">
+                        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-lg border border-white/20 p-8">
                             <div className="absolute top-0 right-0 w-40 h-40 bg-blue-500/10 rounded-full blur-3xl" />
-                            <div className="absolute bottom-0 left-0 w-40 h-40 bg-cyan-500/10 rounded-full blur-3xl" />
 
                             <div className="relative z-10">
                                 <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
@@ -119,7 +113,7 @@ export default function ProfilPage() {
                                                 <User className="w-16 h-16 text-white" />
                                             </div>
                                         )}
-                                        <label className="absolute bottom-0 right-0 bg-linear-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white p-3 rounded-xl cursor-pointer transition-all shadow-lg hover:shadow-cyan-500/50">
+                                        <label className="absolute bottom-0 right-0 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-xl cursor-pointer transition-all shadow-lg">
                                             <Camera className="w-5 h-5" />
                                             <input
                                                 type="file"
@@ -166,7 +160,7 @@ export default function ProfilPage() {
                         {/* Account Status Card */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             {/* Status */}
-                            <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-white/10 to-white/5 backdrop-blur-lg border border-white/20 p-6">
+                            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-lg border border-white/20 p-6">
                                 <div className="absolute top-0 right-0 w-20 h-20 bg-green-500/10 rounded-full blur-2xl" />
                                 <div className="relative z-10">
                                     <p className="text-gray-400 text-sm mb-3">Status Akun</p>
@@ -179,7 +173,7 @@ export default function ProfilPage() {
                             </div>
 
                             {/* Member Since */}
-                            <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-white/10 to-white/5 backdrop-blur-lg border border-white/20 p-6">
+                            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-lg border border-white/20 p-6">
                                 <div className="absolute top-0 right-0 w-20 h-20 bg-blue-500/10 rounded-full blur-2xl" />
                                 <div className="relative z-10">
                                     <p className="text-gray-400 text-sm mb-3">Bergabung</p>
@@ -189,13 +183,25 @@ export default function ProfilPage() {
                             </div>
 
                             {/* Quick Links */}
-                            <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-white/10 to-white/5 backdrop-blur-lg border border-white/20 p-6">
+                            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-lg border border-white/20 p-6">
                                 <div className="absolute top-0 right-0 w-20 h-20 bg-purple-500/10 rounded-full blur-2xl" />
-                                <div className="relative z-10">
-                                    <p className="text-gray-400 text-sm mb-3">Menu Cepat</p>
+                                <div className="relative z-10 space-y-3">
+                                    <p className="text-gray-400 text-sm mb-4">Menu Cepat</p>
+                                    <Link
+                                        href="/cek-kesehatan"
+                                        className="block text-sm text-cyan-400 hover:text-cyan-300 font-medium transition-colors"
+                                    >
+                                        Cek Kesehatan
+                                    </Link>
+                                    <Link
+                                        href="/chat"
+                                        className="block text-sm text-cyan-400 hover:text-cyan-300 font-medium transition-colors"
+                                    >
+                                        Chat AI
+                                    </Link>
                                     <button
                                         onClick={handleLogout}
-                                        className="text-sm text-red-400 hover:text-red-300 font-medium transition-colors"
+                                        className="block w-full text-left text-sm text-red-400 hover:text-red-300 font-medium transition-colors"
                                     >
                                         Keluar Akun
                                     </button>
@@ -208,9 +214,9 @@ export default function ProfilPage() {
                             {/* Health Data */}
                             <Link
                                 href="/cek-kesehatan"
-                                className="group relative overflow-hidden rounded-2xl bg-linear-to-br from-white/10 to-white/5 backdrop-blur-lg border border-white/20 p-6 hover:border-white/40 transition-all duration-300"
+                                className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-lg border border-white/20 p-6 hover:border-white/40 hover:shadow-lg transition-all duration-300"
                             >
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/10 rounded-full blur-3xl group-hover:opacity-75 transition-opacity" />
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/10 rounded-full blur-3xl" />
                                 <div className="relative z-10">
                                     <h3 className="text-lg font-semibold text-white mb-2">Data Kesehatan</h3>
                                     <p className="text-gray-400 text-sm mb-4">Lihat dan kelola data kesehatan Anda</p>
@@ -221,7 +227,7 @@ export default function ProfilPage() {
                             </Link>
 
                             {/* Settings */}
-                            <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-white/10 to-white/5 backdrop-blur-lg border border-white/20 p-6">
+                            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-lg border border-white/20 p-6">
                                 <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl" />
                                 <div className="relative z-10">
                                     <h3 className="text-lg font-semibold text-white mb-2">Pengaturan Privasi</h3>

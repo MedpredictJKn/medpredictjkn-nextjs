@@ -9,7 +9,6 @@ export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
   try {
-    // Try both lowercase and original case for the header
     const authHeader = request.headers.get("authorization") || request.headers.get("Authorization");
     const token = extractToken(authHeader);
 
@@ -42,33 +41,73 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create health data
-    const healthData = await createHealthData(decoded.userId, body);
+    try {
+      // Create health data dengan timeout
+      const healthData = await Promise.race([
+        createHealthData(decoded.userId, body),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Database operation timeout")), 15000)
+        ),
+      ]);
 
-    // Get user info for WA notification
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
-      select: { name: true, phone: true },
-    });
-
-    // Send WA notification if phone is available
-    if (user?.phone) {
-      await sendHealthNotification(user.phone, user.name, {
-        bmi: healthData.bmi,
-        status: healthData.status,
-        height: healthData.height,
-        weight: healthData.weight,
+      // Get user info untuk WA notification
+      const user = await prisma.user.findUnique({
+        where: { id: decoded.userId },
+        select: { name: true, phone: true },
       });
-    }
 
-    return NextResponse.json(
-      {
-        success: true,
-        message: "Data kesehatan berhasil disimpan",
-        data: healthData,
-      } as ApiResponse<typeof healthData>,
-      { status: 201 }
-    );
+      // Send WA notification ASYNC (jangan tunggu)
+      if (user?.phone) {
+        // Pastikan nomor lengkap dengan kode negara (62)
+        let phoneNumber = user.phone.trim();
+        
+        // Jika nomor dimulai dengan 0, ganti dengan 62
+        if (phoneNumber.startsWith("0")) {
+          phoneNumber = "62" + phoneNumber.slice(1);
+        }
+        
+        // Jika belum punya 62, tambahkan
+        if (!phoneNumber.startsWith("62")) {
+          phoneNumber = "62" + phoneNumber;
+        }
+
+        console.log(`[Health API] Sending WA to: ${phoneNumber}`);
+
+        sendHealthNotification(phoneNumber, user.name, {
+          bmi: healthData.bmi,
+          status: healthData.status,
+          height: healthData.height,
+          weight: healthData.weight,
+        }).catch((err) => {
+          console.error("[Health API] WA notification failed:", err);
+        });
+      }
+
+      return NextResponse.json(
+        {
+          success: true,
+          message: "Data kesehatan berhasil disimpan",
+          data: healthData,
+        } as ApiResponse<typeof healthData>,
+        { status: 201 }
+      );
+    } catch (dbError) {
+      console.error("[DB Error]", dbError);
+
+      // Handle specific Prisma errors
+      if ((dbError as Record<string, string>).code === "P2024") {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Database sedang busy. Silakan coba lagi dalam beberapa detik.",
+            error: "Connection pool timeout",
+          } as ApiResponse<null>,
+          { status: 503 }
+        );
+      }
+
+      throw dbError;
+    }
   } catch (error) {
     console.error("Health check error:", error);
     return NextResponse.json(
@@ -101,17 +140,40 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const latest = await getLatestHealth(decoded.userId);
-    const history = await getHealthHistory(decoded.userId);
+    try {
+      const latest = await Promise.race([
+        getLatestHealth(decoded.userId),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("Query timeout")), 10000)
+        ),
+      ]);
 
-    return NextResponse.json(
-      {
-        success: true,
-        message: "Data kesehatan berhasil diambil",
-        data: { latest, history },
-      } as ApiResponse<{ latest: typeof latest; history: typeof history }>,
-      { status: 200 }
-    );
+      const history = await Promise.race([
+        getHealthHistory(decoded.userId),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("Query timeout")), 10000)
+        ),
+      ]);
+
+      return NextResponse.json(
+        {
+          success: true,
+          message: "Data kesehatan berhasil diambil",
+          data: { latest, history },
+        } as ApiResponse<{ latest: typeof latest; history: typeof history }>,
+        { status: 200 }
+      );
+    } catch (queryError) {
+      console.error("[Query Error]", queryError);
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Timeout mengambil data dari database",
+          error: String(queryError),
+        } as ApiResponse<null>,
+        { status: 504 }
+      );
+    }
   } catch (error) {
     console.error("Get health error:", error);
     return NextResponse.json(

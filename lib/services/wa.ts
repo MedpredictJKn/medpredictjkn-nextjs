@@ -1,5 +1,5 @@
 // WhatsApp Notification Service
-// Untuk saat ini ini adalah template - update dengan API Fonnte atau Twilio nanti
+// Menggunakan WhAPI.cloud API
 
 export interface WhatsAppPayload {
   phoneNumber: string;
@@ -10,12 +10,12 @@ export async function sendWhatsAppNotification(
   payload: WhatsAppPayload
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
-    const apiKey = process.env.FONNTE_API_KEY;
-    const deviceId = process.env.FONNTE_DEVICE_ID;
+    const apiToken = process.env.WHAT_API_TOKEN;
+    const apiUrl = process.env.WHAT_API_URL;
 
-    if (!apiKey || !deviceId) {
+    if (!apiToken || !apiUrl) {
       console.warn(
-        "WhatsApp API not configured (FONNTE_API_KEY or FONNTE_DEVICE_ID missing)"
+        "WhatsApp API not configured (WHAT_API_TOKEN or WHAT_API_URL missing)"
       );
       return {
         success: false,
@@ -23,34 +23,56 @@ export async function sendWhatsAppNotification(
       };
     }
 
-    const response = await fetch("https://api.fonnte.com/send", {
+    // Format nomor: pastikan hanya angka tanpa @c.us untuk WhAPI
+    let phoneNumber = payload.phoneNumber.trim();
+    
+    // Remove @c.us jika ada
+    if (phoneNumber.includes("@")) {
+      phoneNumber = phoneNumber.split("@")[0];
+    }
+    
+    // Validasi nomor Indonesia (harus dimulai dengan 62 dan minimal 10 digit setelah 62)
+    if (!phoneNumber.startsWith("62") || phoneNumber.length < 12) {
+      console.error(
+        `[WhatsApp] Invalid phone number format: ${phoneNumber}. Must start with 62 and have 10-12 digits after it.`
+      );
+      return {
+        success: false,
+        error: "Format nomor WhatsApp tidak valid. Gunakan format 62xxxxxxxxxx",
+      };
+    }
+
+    console.log(`[WhatsApp] Sending to ${phoneNumber}`);
+
+    const response = await fetch(`${apiUrl}/messages/text`, {
       method: "POST",
       headers: {
-        Authorization: apiKey,
+        Authorization: `Bearer ${apiToken}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        target: payload.phoneNumber,
-        message: payload.message,
-        device_id: deviceId,
+        to: phoneNumber,  // Tanpa @c.us, WhAPI akan menambahkannya otomatis
+        body: payload.message,
       }),
     });
 
     const data = await response.json();
 
-    if (response.ok && data.status === true) {
+    console.log(`[WhatsApp] Response status: ${response.status}`, data);
+
+    if (response.ok && (data.sent || data.result)) {
       return {
         success: true,
-        messageId: data.messageId,
+        messageId: data.message?.id || data.result?.id || data.id,
       };
     }
 
     return {
       success: false,
-      error: data.message || "Gagal mengirim pesan",
+      error: data.message || data.error || "Gagal mengirim pesan",
     };
   } catch (error) {
-    console.error("WhatsApp notification error:", error);
+    console.error("[WhatsApp] Error:", error);
     return {
       success: false,
       error: String(error),
