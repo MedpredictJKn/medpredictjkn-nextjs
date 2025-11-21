@@ -9,6 +9,8 @@ export const prisma =
       process.env.NODE_ENV === "development"
         ? ["query", "error", "warn"]
         : ["error"],
+    // Disable query logging in production for performance
+    errorFormat: "pretty",
   });
 
 // Configure connection pool settings
