@@ -15,39 +15,39 @@ datasource db {
 }
 
 model User {
-  id        String     @id @default(cuid())
-  email     String     @unique
+  id        String   @id @default(cuid())
+  email     String   @unique
   password  String
   name      String
   phone     String?
   age       Int?
   gender    String? // 'male' | 'female'
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  healthData      HealthData[]
-  chatHistory     ChatHistory[]
-  medicalRecords  MedicalRecord[]
-  riskScores      DiseaseRiskScore?
+  healthData               HealthData[]
+  chatHistory              ChatHistory[]
+  medicalRecords           MedicalRecord[]
+  riskScores               DiseaseRiskScore?
   screeningRecommendations ScreeningRecommendation[]
 
   @@map("users")
 }
 
 model HealthData {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  height    Float    // dalam cm
-  weight    Float    // dalam kg
-  bmi       Float
-  status    String   // 'underweight' | 'normal' | 'overweight' | 'obese'
-  
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  height Float // dalam cm
+  weight Float // dalam kg
+  bmi    Float
+  status String // 'underweight' | 'normal' | 'overweight' | 'obese'
+
   bloodPressure String? // format: "120/80"
   bloodSugar    Float?
   cholesterol   Float?
-  
+
   notes     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -56,14 +56,14 @@ model HealthData {
 }
 
 model ChatHistory {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  message   String
-  response  String
-  source    String   // 'fastapi' | 'gemini'
-  
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  message  String
+  response String
+  source   String // 'fastapi' | 'gemini'
+
   createdAt DateTime @default(now())
 
   @@map("chat_history")
@@ -72,167 +72,167 @@ model ChatHistory {
 // ========== MedpredictJKN Models ==========
 
 model MedicalRecord {
-  id              String   @id @default(cuid())
-  userId          String
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   // JKN History
-  diagnosisICD10  String?  // Diagnosis code (e.g., E11 for Diabetes Type 2)
-  diagnosisName   String?
-  medicationName  String?
-  medicationDose  String?
-  visitDate       DateTime
-  visitType       String   // 'konsultasi' | 'pemeriksaan' | 'operasi'
-  
+  diagnosisICD10 String? // Diagnosis code (e.g., E11 for Diabetes Type 2)
+  diagnosisName  String?
+  medicationName String?
+  medicationDose String?
+  visitDate      DateTime
+  visitType      String // 'konsultasi' | 'pemeriksaan' | 'operasi'
+
   // Lab Results
-  labTestName     String?
-  labValue        Float?
-  labUnit         String?
-  labNormalRange  String?
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  labTestName    String?
+  labValue       Float?
+  labUnit        String?
+  labNormalRange String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("medical_records")
 }
 
 model DiseaseRiskScore {
-  id                    String   @id @default(cuid())
-  userId                String   @unique
-  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   // Risk Scores (0-100)
-  diabetes2Score       Float    @default(0)
-  hypertensionScore    Float    @default(0)
-  coronaryHeartScore   Float    @default(0)
-  strokeScore          Float    @default(0)
-  
+  diabetes2Score     Float @default(0)
+  hypertensionScore  Float @default(0)
+  coronaryHeartScore Float @default(0)
+  strokeScore        Float @default(0)
+
   // Thresholds (default: 70%)
-  riskThreshold        Float    @default(70)
-  
+  riskThreshold Float @default(70)
+
   // Overall Risk Status
-  highRiskDiseases     String[] // Array of disease names with high risk
-  
+  highRiskDiseases String[] // Array of disease names with high risk
+
   // Alert Status
-  alertSent            Boolean  @default(false)
-  lastAlertDate        DateTime?
-  alertedToFaskes      Boolean  @default(false)
-  
-  calculatedAt         DateTime @default(now())
-  nextCalculationDate  DateTime?
-  
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  alertSent       Boolean   @default(false)
+  lastAlertDate   DateTime?
+  alertedToFaskes Boolean   @default(false)
+
+  calculatedAt        DateTime  @default(now())
+  nextCalculationDate DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("disease_risk_scores")
 }
 
 model ScreeningRecommendation {
-  id              String   @id @default(cuid())
-  userId          String
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  disease         String   // 'Diabetes Mellitus Tipe 2', 'Hipertensi', 'Jantung Koroner'
-  riskScore       Float
-  
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  disease   String // 'Diabetes Mellitus Tipe 2', 'Hipertensi', 'Jantung Koroner'
+  riskScore Float
+
   // Screening recommendations
-  screeningTests  String[] // e.g., ['Gula Darah Puasa', 'HbA1c', 'Lipid Profile']
-  priorityLevel   String   // 'urgent' | 'high' | 'medium' | 'low'
-  
+  screeningTests String[] // e.g., ['Gula Darah Puasa', 'HbA1c', 'Lipid Profile']
+  priorityLevel  String // 'urgent' | 'high' | 'medium' | 'low'
+
   // Lifestyle recommendations
   lifestyleAdvice String[] // Array of personalized lifestyle tips
-  
+
   faskhesRecommended String? // Recommended health facility
-  
-  completionStatus String  @default("pending") // 'pending' | 'completed' | 'declined'
+
+  completionStatus String    @default("pending") // 'pending' | 'completed' | 'declined'
   completedDate    DateTime?
-  
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("screening_recommendations")
 }
 
 model HealthFacility {
-  id              String   @id @default(cuid())
-  name            String
-  code            String   @unique
-  type            String   // 'puskesmas' | 'klinik' | 'rumah_sakit'
-  
-  address         String
-  city            String
-  province        String
-  latitude        Float?
-  longitude       Float?
-  
-  phone           String?
-  email           String?
-  
-  staffCount      Int?
-  hasLab          Boolean  @default(false)
-  hasDiagnostics  Boolean  @default(false)
-  
-  assignedUsers   HealthFacilityUser[]
-  alerts          FaskesAlert[]
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id   String @id @default(cuid())
+  name String
+  code String @unique
+  type String // 'puskesmas' | 'klinik' | 'rumah_sakit'
+
+  address   String
+  city      String
+  province  String
+  latitude  Float?
+  longitude Float?
+
+  phone String?
+  email String?
+
+  staffCount     Int?
+  hasLab         Boolean @default(false)
+  hasDiagnostics Boolean @default(false)
+
+  assignedUsers HealthFacilityUser[]
+  alerts        FaskesAlert[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("health_facilities")
 }
 
 model HealthFacilityUser {
-  id                String   @id @default(cuid())
-  facilityId        String
-  facility          HealthFacility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
-  
+  id         String         @id @default(cuid())
+  facilityId String
+  facility   HealthFacility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+
   healthWorkerEmail String
   healthWorkerName  String
-  role              String   // 'dokter' | 'perawat' | 'bidan'
-  
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  role              String // 'dokter' | 'perawat' | 'bidan'
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("health_facility_users")
 }
 
 model FaskesAlert {
-  id              String   @id @default(cuid())
-  facilityId      String
-  facility        HealthFacility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
-  
-  patientId       String
-  disease         String
-  riskScore       Float
-  
-  alertType       String   // 'risk_threshold_exceeded' | 'urgent_review_needed'
-  severity        String   // 'critical' | 'high' | 'medium'
-  
-  isRead          Boolean  @default(false)
-  readAt          DateTime?
-  
-  actionTaken     String?  // Free text for health worker to note action
-  actionDate      DateTime?
-  
-  sentAt          DateTime @default(now())
-  createdAt       DateTime @default(now())
+  id         String         @id @default(cuid())
+  facilityId String
+  facility   HealthFacility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+
+  patientId String
+  disease   String
+  riskScore Float
+
+  alertType String // 'risk_threshold_exceeded' | 'urgent_review_needed'
+  severity  String // 'critical' | 'high' | 'medium'
+
+  isRead Boolean   @default(false)
+  readAt DateTime?
+
+  actionTaken String? // Free text for health worker to note action
+  actionDate  DateTime?
+
+  sentAt    DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@map("faskes_alerts")
 }
 
 model RiskAlertLog {
-  id              String   @id @default(cuid())
-  userId          String
-  
-  alertType       String   // 'app_notification' | 'sms' | 'email'
-  message         String
-  disease         String
-  riskScore       Float
-  
-  sentAt          DateTime @default(now())
-  readAt          DateTime?
-  
-  createdAt       DateTime @default(now())
+  id     String @id @default(cuid())
+  userId String
+
+  alertType String // 'app_notification' | 'sms' | 'email'
+  message   String
+  disease   String
+  riskScore Float
+
+  sentAt DateTime  @default(now())
+  readAt DateTime?
+
+  createdAt DateTime @default(now())
 
   @@map("risk_alert_logs")
 }

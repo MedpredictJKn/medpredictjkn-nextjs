@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { AlertCircle, Send, MessageCircle, User, Bot, ArrowLeft, Loader } from "lucide-react";
+import { parseMarkdownBold } from "@/lib/utils";
 
 interface User {
     id: string;

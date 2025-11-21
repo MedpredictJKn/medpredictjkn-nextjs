@@ -120,3 +120,33 @@ export async function retryWithBackoff<T>(
 
   throw new Error("Unexpected state in retryWithBackoff");
 }
+
+/**
+ * Parse markdown bold syntax (**text**) from a string
+ * Returns array of strings and bold markers for React rendering
+ */
+export function parseMarkdownBold(text: string): (string | { type: 'bold'; content: string })[] {
+  const parts: (string | { type: 'bold'; content: string })[] = [];
+  const regex = /\*\*(.+?)\*\*/g;
+  let lastIndex = 0;
+  let match;
+
+  while ((match = regex.exec(text)) !== null) {
+    // Add text before bold
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
+    }
+
+    // Add bold text
+    parts.push({ type: 'bold', content: match[1] });
+
+    lastIndex = regex.lastIndex;
+  }
+
+  // Add remaining text
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+
+  return parts.length === 0 ? [text] : parts;
+}
