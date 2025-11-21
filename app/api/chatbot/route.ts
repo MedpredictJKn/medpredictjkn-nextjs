@@ -69,7 +69,17 @@ export async function POST(request: NextRequest) {
       body.message,
       response,
       source as "fastapi" | "gemini"
-    );
+    ) as ChatResponse | null;
+
+    if (!chatData) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Gagal menyimpan chat history",
+        },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json(
       {
