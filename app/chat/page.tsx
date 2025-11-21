@@ -2,11 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { Sidebar } from "@/components/ui/sidebar";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
-import { AlertCircle, Send, MessageCircle, ArrowLeft, Loader, User, Bot } from "lucide-react";
+import { AlertCircle, Send, MessageCircle, Loader, User, Bot } from "lucide-react";
+
+interface User {
+    id: string;
+    name: string;
+    email: string;
+    phone?: string;
+    profilePhoto?: string;
+}
 
 interface Message {
     type: "user" | "bot";
@@ -16,18 +22,33 @@ interface Message {
 
 export default function ChatPage() {
     const router = useRouter();
+    const [user, setUser] = useState<User | null>(null);
     const [messages, setMessages] = useState<Message[]>([]);
     const [inputValue, setInputValue] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [isCheckingAuth, setIsCheckingAuth] = useState(true);
     const [error, setError] = useState("");
+    const [_token, setToken] = useState("");
 
     useEffect(() => {
         const storedToken = localStorage.getItem("token");
+        const storedUser = localStorage.getItem("user");
         if (!storedToken) {
             router.push("/auth/login");
             return;
         }
+
+        setToken(storedToken);
+
+        if (storedUser) {
+            try {
+                const userData = JSON.parse(storedUser);
+                setUser(userData);
+            } catch {
+                setUser(null);
+            }
+        }
+
         setIsCheckingAuth(false);
     }, [router]);
 
@@ -91,70 +112,77 @@ export default function ChatPage() {
         }
     };
 
+    const handleLogout = () => {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        router.push("/auth/login");
+    };
+
     if (isCheckingAuth) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-purple-50 to-blue-50">
+            <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-slate-900 via-slate-800 to-slate-900">
                 <div className="text-center space-y-4">
-                    <div className="inline-flex h-12 w-12 animate-spin rounded-full border-4 border-purple-200 border-t-purple-600"></div>
-                    <p className="text-gray-600 font-medium">Memverifikasi akses...</p>
+                    <div className="inline-flex h-12 w-12 animate-spin rounded-full border-4 border-blue-200 border-t-blue-500"></div>
+                    <p className="text-gray-400 font-medium">Memverifikasi akses...</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-linear-to-br from-purple-50 via-white to-blue-50 flex flex-col">
-            {/* Header */}
-            <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
-                <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-                    <Link href="/dashboard" className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 font-medium">
-                        <ArrowLeft className="w-4 h-4" />
-                        Kembali
-                    </Link>
-                    <div className="flex items-center gap-3">
-                        <div className="bg-linear-to-br from-purple-600 to-blue-600 p-2 rounded-full">
-                            <MessageCircle className="w-5 h-5 text-white" />
-                        </div>
-                        <div>
-                            <h1 className="text-xl font-bold text-gray-900">Chat dengan AI</h1>
-                            <p className="text-xs text-gray-600">Tanyakan pertanyaan kesehatan Anda</p>
-                        </div>
-                    </div>
-                </div>
-            </header>
+        <div className="min-h-screen bg-linear-to-br from-slate-900 via-slate-800 to-slate-900 flex">
+            {/* Sidebar */}
+            <Sidebar onLogout={handleLogout} userName={user?.name} userEmail={user?.email} />
 
             {/* Chat Container */}
-            <main className="flex-1 max-w-4xl w-full mx-auto px-4 py-8 flex flex-col">
-                {/* Empty State */}
-                {messages.length === 0 && (
+            <main className="flex-1 ml-64 flex flex-col">
+                {/* Header */}
+                <header className="sticky top-0 z-40 backdrop-blur-xl bg-white/10 border-b border-white/10">
+                    <div className="px-8 py-6 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="bg-linear-to-r from-purple-500 to-pink-500 p-2.5 rounded-xl">
+                                <MessageCircle className="w-5 h-5 text-white" />
+                            </div>
+                            <div>
+                                <h1 className="text-3xl font-bold bg-linear-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Chat dengan AI</h1>
+                                <p className="text-sm text-gray-400 mt-1">Tanyakan pertanyaan kesehatan Anda</p>
+                            </div>
+                        </div>
+                    </div>
+                </header>
+
+                {/* Main Chat Area */}
+                <div className="flex-1 flex flex-col p-8">
+                    {/* Empty State */}
+                    {messages.length === 0 && (
                     <div className="flex-1 flex items-center justify-center mb-8">
                         <div className="text-center space-y-6">
                             <div className="flex justify-center">
-                                <div className="bg-linear-to-br from-purple-100 to-blue-100 p-6 rounded-full">
-                                    <MessageCircle className="w-12 h-12 text-purple-600" />
+                                <div className="bg-linear-to-br from-purple-500/20 to-pink-500/20 p-6 rounded-2xl border border-purple-500/20 backdrop-blur">
+                                    <MessageCircle className="w-12 h-12 text-purple-400" />
                                 </div>
                             </div>
                             <div>
-                                <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                                <h2 className="text-2xl font-bold text-white mb-2">
                                     Mulai Percakapan
                                 </h2>
-                                <p className="text-gray-600 max-w-md">
+                                <p className="text-gray-400 max-w-md">
                                     Tanyakan apa pun tentang kesehatan Anda. AI kami siap membantu menjawab pertanyaan dengan informasi yang akurat.
                                 </p>
                             </div>
                             <div className="flex flex-wrap justify-center gap-2">
-                                <Button variant="outline" size="sm" className="text-xs">
+                                <div className="px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white text-sm font-medium hover:bg-white/20 transition-all cursor-pointer">
                                     Obat-obatan
-                                </Button>
-                                <Button variant="outline" size="sm" className="text-xs">
+                                </div>
+                                <div className="px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white text-sm font-medium hover:bg-white/20 transition-all cursor-pointer">
                                     Gaya Hidup
-                                </Button>
-                                <Button variant="outline" size="sm" className="text-xs">
+                                </div>
+                                <div className="px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white text-sm font-medium hover:bg-white/20 transition-all cursor-pointer">
                                     Nutrisi
-                                </Button>
-                                <Button variant="outline" size="sm" className="text-xs">
+                                </div>
+                                <div className="px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white text-sm font-medium hover:bg-white/20 transition-all cursor-pointer">
                                     Kesehatan Mental
-                                </Button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -162,16 +190,16 @@ export default function ChatPage() {
 
                 {/* Messages */}
                 {messages.length > 0 && (
-                    <div className="flex-1 space-y-4 mb-8 overflow-y-auto pr-2">
+                    <div className="flex-1 space-y-4 mb-8 overflow-y-auto pr-4">
                         {messages.map((message, index) => (
                             <div
                                 key={index}
-                                className={`flex ${message.type === "user" ? "justify-end" : "justify-start"} animate-in fade-in slide-in-from-bottom-2`}
+                                className={`flex ${message.type === "user" ? "justify-end" : "justify-start"}`}
                             >
                                 <div className={`flex gap-3 max-w-2xl ${message.type === "user" ? "flex-row-reverse" : ""}`}>
-                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${message.type === "user"
-                                        ? "bg-linear-to-br from-blue-600 to-indigo-600 text-white"
-                                        : "bg-linear-to-br from-purple-600 to-blue-600 text-white"
+                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-white text-sm font-bold ${message.type === "user"
+                                            ? "bg-linear-to-br from-blue-600 to-cyan-600"
+                                            : "bg-linear-to-br from-purple-600 to-pink-600"
                                         }`}>
                                         {message.type === "user" ? (
                                             <User className="w-4 h-4" />
@@ -180,41 +208,37 @@ export default function ChatPage() {
                                         )}
                                     </div>
                                     <div>
-                                        <Card className={`border-0 ${message.type === "user"
-                                            ? "bg-linear-to-br from-blue-600 to-indigo-600 text-white shadow-md"
-                                            : "bg-white text-gray-900 shadow-md"
+                                        <div className={`rounded-2xl p-4 backdrop-blur-lg border ${message.type === "user"
+                                                ? "bg-linear-to-br from-blue-600 to-cyan-600 text-white border-blue-500/20"
+                                                : "bg-white/10 text-white border-white/20"
                                             }`}>
-                                            <CardContent className="p-4">
-                                                <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                                                    {message.text}
-                                                </p>
-                                                <p className={`text-xs mt-3 ${message.type === "user" ? "text-blue-100" : "text-gray-500"}`}>
-                                                    {message.timestamp.toLocaleTimeString("id-ID", {
-                                                        hour: "2-digit",
-                                                        minute: "2-digit",
-                                                    })}
-                                                </p>
-                                            </CardContent>
-                                        </Card>
+                                            <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                                                {message.text}
+                                            </p>
+                                            <p className={`text-xs mt-2 ${message.type === "user" ? "text-blue-100" : "text-gray-400"}`}>
+                                                {message.timestamp.toLocaleTimeString("id-ID", {
+                                                    hour: "2-digit",
+                                                    minute: "2-digit",
+                                                })}
+                                            </p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         ))}
 
                         {isLoading && (
-                            <div className="flex justify-start animate-in fade-in slide-in-from-bottom-2">
+                            <div className="flex justify-start">
                                 <div className="flex gap-3">
-                                    <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-linear-to-br from-purple-600 to-blue-600 text-white">
+                                    <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-linear-to-br from-purple-600 to-pink-600 text-white">
                                         <Bot className="w-4 h-4" />
                                     </div>
-                                    <Card className="border-0 bg-white text-gray-900 shadow-md">
-                                        <CardContent className="p-4">
-                                            <div className="flex items-center gap-2">
-                                                <Loader className="w-4 h-4 animate-spin text-purple-600" />
-                                                <span className="text-sm text-gray-600">AI sedang berpikir...</span>
-                                            </div>
-                                        </CardContent>
-                                    </Card>
+                                    <div className="bg-white/10 border border-white/20 rounded-2xl p-4 backdrop-blur-lg">
+                                        <div className="flex items-center gap-2">
+                                            <Loader className="w-4 h-4 animate-spin text-purple-400" />
+                                            <span className="text-sm text-gray-300">AI sedang berpikir...</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         )}
@@ -222,38 +246,39 @@ export default function ChatPage() {
                 )}
 
                 {error && (
-                    <div className="flex items-start gap-3 p-4 rounded-lg bg-red-50 border border-red-200 mb-6">
-                        <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 shrink-0" />
-                        <p className="text-red-700 text-sm">{error}</p>
+                    <div className="flex items-start gap-3 p-4 rounded-lg bg-red-500/20 border border-red-500/40 mb-6 backdrop-blur">
+                        <AlertCircle className="w-5 h-5 text-red-400 mt-0.5 shrink-0" />
+                        <p className="text-red-300 text-sm">{error}</p>
                     </div>
                 )}
 
                 {/* Input Form */}
-                <form onSubmit={handleSendMessage} className="flex gap-3 sticky bottom-0 bg-linear-to-t from-white to-transparent pt-4">
+                <form onSubmit={handleSendMessage} className="flex gap-3 sticky bottom-0 bg-linear-to-t from-slate-800 via-slate-800 to-transparent pt-4">
                     <Input
                         type="text"
                         value={inputValue}
                         onChange={(e) => setInputValue(e.target.value)}
                         placeholder="Ketik pesan Anda..."
                         disabled={isLoading}
-                        className="h-11 flex-1"
+                        className="h-11 flex-1 bg-white/10 border border-white/20 text-white placeholder:text-gray-500 rounded-lg focus:border-purple-400 focus:ring-purple-400/20"
                     />
-                    <Button
+                    <button
                         type="submit"
                         disabled={isLoading || !inputValue.trim()}
-                        className="h-11 px-6 bg-linear-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
+                        className="h-11 px-6 bg-linear-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 text-white font-medium rounded-lg transition-all flex items-center justify-center gap-2"
                     >
                         {isLoading ? (
                             <Loader className="w-4 h-4 animate-spin" />
                         ) : (
                             <Send className="w-4 h-4" />
                         )}
-                    </Button>
+                    </button>
                 </form>
 
                 {/* Footer Info */}
-                <div className="text-center text-sm text-gray-600 mt-4">
+                <div className="text-center text-sm text-gray-500 mt-4">
                     <p>Informasi dari AI mungkin tidak 100% akurat. Konsultasikan dengan dokter untuk diagnosis medis.</p>
+                </div>
                 </div>
             </main>
         </div>

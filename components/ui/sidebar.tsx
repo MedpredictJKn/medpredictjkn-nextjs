@@ -35,10 +35,10 @@ export function Sidebar({ onLogout, userName, userEmail }: SidebarProps) {
 
     return (
         <aside className="fixed left-0 top-0 h-screen w-64 bg-white border-r border-gray-100 flex flex-col shadow-sm">
-            {/* Logo Section */}
-            <div className="p-6 border-b border-gray-100 bg-linear-to-b from-white to-gray-50">
-                <Link href="/dashboard" className="flex items-center gap-3 group">
-                    <div className="relative h-12 w-12 flex items-center justify-center rounded-xl group-hover:shadow-md transition-all">
+            {/* Logo Section - Match Dashboard Header */}
+            <div className="border-b border-gray-100 bg-white/80 backdrop-blur-sm px-6 py-4 h-20 flex items-center gap-3 group">
+                <Link href="/dashboard" className="flex items-center gap-3 group w-full h-full">
+                    <div className="shrink-0">
                         <Image
                             src="/images/medpredictjkn.png"
                             alt="MedPredict"
@@ -47,18 +47,17 @@ export function Sidebar({ onLogout, userName, userEmail }: SidebarProps) {
                             className="object-contain"
                         />
                     </div>
-                    <div className="flex-1">
-                        <h2 className="font-bold text-sm leading-tight">
-                            <span style={{ color: "#123c70" }}>Medpredict</span>
-                            <span style={{ color: "#76c04a" }}>JKn</span>
+                    <div className="flex-1 min-w-0">
+                        <h2 className="text-sm font-bold text-gray-900 leading-tight tracking-tight">
+                            <span style={{ color: "#123c70" }}>Medpredict</span><span style={{ color: "#76c04a" }}>JKn</span>
                         </h2>
-                        <p className="text-xs text-gray-500 font-medium">Health Prediction</p>
+                        <p className="text-xs text-gray-500 font-medium mt-0.5">Health Prediction</p>
                     </div>
                 </Link>
             </div>
 
             {/* Navigation */}
-            <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
+            <nav className="flex-1 px-3 py-6 space-y-1.5 overflow-y-auto border-t border-gray-200">
                 {navItems.map((item) => {
                     const Icon = item.icon;
                     const active = isActive(item.href);
@@ -67,28 +66,28 @@ export function Sidebar({ onLogout, userName, userEmail }: SidebarProps) {
                             key={item.href}
                             href={item.href}
                             className={cn(
-                                'flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-all duration-200',
+                                'flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-all duration-200 relative',
                                 active
                                     ? 'bg-blue-50 text-blue-600 border-l-4 border-blue-600 shadow-sm'
-                                    : 'text-gray-700 hover:bg-gray-50 border-l-4 border-transparent hover:border-blue-300'
+                                    : 'text-gray-700 hover:bg-gray-50 border-l-4 border-transparent hover:text-blue-600'
                             )}
                         >
                             <Icon className="w-5 h-5 shrink-0" />
-                            <span className="text-sm">{item.label}</span>
+                            <span className="text-sm font-medium">{item.label}</span>
                         </Link>
                     );
                 })}
             </nav>
 
             {/* User Section */}
-            <div className="border-t border-gray-100 p-4 space-y-3 bg-linear-to-b from-white to-gray-50">
+            <div className="border-t border-gray-100 p-3 space-y-3 bg-white">
                 {/* User Info */}
                 {userName && (
-                    <Link href="/profil" className="block px-4 py-3 bg-linear-to-br from-blue-50 to-indigo-50 rounded-lg hover:from-blue-100 hover:to-indigo-100 transition-all duration-200 border border-blue-100 hover:border-blue-200 cursor-pointer group">
-                        <p className="text-xs text-gray-600 font-semibold uppercase tracking-wider">Pengguna Aktif</p>
+                    <Link href="/profil" className="block px-4 py-3.5 bg-linear-to-br from-blue-50 to-indigo-50 rounded-lg hover:from-blue-100 hover:to-indigo-100 transition-all duration-200 border border-blue-100 hover:border-blue-200 cursor-pointer group shadow-sm hover:shadow-md">
+                        <p className="text-xs text-blue-700 font-bold uppercase tracking-wider">Pengguna Aktif</p>
                         <p className="text-sm font-bold text-gray-900 mt-1.5 truncate group-hover:text-blue-600 transition-colors">{userName}</p>
                         {userEmail && (
-                            <p className="text-xs text-gray-600 mt-1 truncate group-hover:text-blue-500 transition-colors">{userEmail}</p>
+                            <p className="text-xs text-gray-600 mt-1 truncate group-hover:text-blue-600 transition-colors">{userEmail}</p>
                         )}
                     </Link>
                 )}
@@ -96,7 +95,7 @@ export function Sidebar({ onLogout, userName, userEmail }: SidebarProps) {
                 {/* Action Buttons */}
                 <button
                     onClick={onLogout}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-red-600 hover:bg-red-50 rounded-lg font-medium transition-all duration-200 border border-transparent hover:border-red-200"
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg font-medium transition-all duration-200 border border-transparent hover:border-red-200"
                 >
                     <LogOut className="w-5 h-5 shrink-0" />
                     <span className="text-sm">Keluar</span>

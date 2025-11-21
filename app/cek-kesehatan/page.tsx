@@ -2,12 +2,19 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { Sidebar } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertCircle, CheckCircle, ArrowLeft, Activity, TrendingUp, Heart, Droplets, Pill } from "lucide-react";
+import { AlertCircle, CheckCircle, Activity, Heart, Droplets, Pill } from "lucide-react";
+
+interface User {
+    id: string;
+    name: string;
+    email: string;
+    phone?: string;
+    profilePhoto?: string;
+}
 
 interface HealthData {
     height: number;
@@ -27,6 +34,7 @@ interface HealthResponse {
 
 export default function CekKesehatanPage() {
     const router = useRouter();
+    const [user, setUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
@@ -45,11 +53,23 @@ export default function CekKesehatanPage() {
 
     useEffect(() => {
         const storedToken = localStorage.getItem("token");
+        const storedUser = localStorage.getItem("user");
         if (!storedToken) {
             router.push("/auth/login");
             return;
         }
+
         setToken(storedToken);
+
+        if (storedUser) {
+            try {
+                const userData = JSON.parse(storedUser);
+                setUser(userData);
+            } catch {
+                setUser(null);
+            }
+        }
+
         setIsCheckingAuth(false);
     }, [router]);
 
@@ -126,33 +146,39 @@ export default function CekKesehatanPage() {
         }
     };
 
+    const handleLogout = () => {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        router.push("/auth/login");
+    };
+
     const getStatusColor = (status: string) => {
         switch (status) {
             case "normal":
-                return "text-green-600";
+                return "text-green-400";
             case "underweight":
-                return "text-blue-600";
+                return "text-blue-400";
             case "overweight":
-                return "text-yellow-600";
+                return "text-yellow-400";
             case "obese":
-                return "text-red-600";
+                return "text-red-400";
             default:
-                return "text-gray-600";
+                return "text-gray-400";
         }
     };
 
-    const getStatusBg = (status: string) => {
+    const getStatusBgGradient = (status: string) => {
         switch (status) {
             case "normal":
-                return "bg-green-50 border-green-200";
+                return "from-green-500/20 to-emerald-500/20 border-green-500/40";
             case "underweight":
-                return "bg-blue-50 border-blue-200";
+                return "from-blue-500/20 to-cyan-500/20 border-blue-500/40";
             case "overweight":
-                return "bg-yellow-50 border-yellow-200";
+                return "from-yellow-500/20 to-orange-500/20 border-yellow-500/40";
             case "obese":
-                return "bg-red-50 border-red-200";
+                return "from-red-500/20 to-pink-500/20 border-red-500/40";
             default:
-                return "bg-gray-50 border-gray-200";
+                return "from-gray-500/20 to-slate-500/20 border-gray-500/40";
         }
     };
 
@@ -173,288 +199,312 @@ export default function CekKesehatanPage() {
 
     if (isCheckingAuth) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-blue-50 to-indigo-50">
+            <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-slate-900 via-slate-800 to-slate-900">
                 <div className="text-center space-y-4">
-                    <div className="inline-flex h-12 w-12 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600"></div>
-                    <p className="text-gray-600 font-medium">Memverifikasi akses...</p>
+                    <div className="inline-flex h-12 w-12 animate-spin rounded-full border-4 border-blue-200 border-t-blue-500"></div>
+                    <p className="text-gray-400 font-medium">Memverifikasi akses...</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-indigo-50 flex flex-col">
-            {/* Header */}
-            <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
-                <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-                    <Link href="/dashboard" className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 font-medium">
-                        <ArrowLeft className="w-4 h-4" />
-                        Kembali
-                    </Link>
-                    <div className="flex items-center gap-3">
-                        <div className="bg-linear-to-br from-blue-600 to-indigo-600 p-2 rounded-full">
-                            <Heart className="w-5 h-5 text-white" />
-                        </div>
-                        <div>
-                            <h1 className="text-xl font-bold text-gray-900">Cek Kesehatan</h1>
-                            <p className="text-xs text-gray-600">Periksa data kesehatan dan risiko penyakit Anda</p>
-                        </div>
-                    </div>
-                </div>
-            </header>
+        <div className="min-h-screen bg-linear-to-br from-slate-900 via-slate-800 to-slate-900 flex">
+            {/* Sidebar */}
+            <Sidebar onLogout={handleLogout} userName={user?.name} userEmail={user?.email} />
 
             {/* Main Content */}
-            <main className="flex-1 max-w-4xl w-full mx-auto px-4 py-8">
-                {/* Messages */}
-                {error && (
-                    <div className="flex items-start gap-3 p-4 rounded-lg bg-red-50 border border-red-200 mb-6">
-                        <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 shrink-0" />
-                        <p className="text-red-700 text-sm">{error}</p>
+            <main className="flex-1 ml-64">
+                {/* Header */}
+                <header className="sticky top-0 z-40 backdrop-blur-xl bg-white/10 border-b border-white/10">
+                    <div className="px-8 py-6 flex items-center justify-between">
+                        <div>
+                            <h1 className="text-3xl font-bold bg-linear-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+                                Cek Kesehatan
+                            </h1>
+                            <p className="text-sm text-gray-400 mt-2">
+                                Periksa data kesehatan dan analisis BMI Anda
+                            </p>
+                        </div>
                     </div>
-                )}
+                </header>
 
-                {success && (
-                    <div className="flex items-start gap-3 p-4 rounded-lg bg-green-50 border border-green-200 mb-6">
-                        <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 shrink-0" />
-                        <p className="text-green-700 text-sm">{success}</p>
-                    </div>
-                )}
+                {/* Page Content */}
+                <div className="p-8 space-y-6">
+                    {/* User Profile Section */}
+                    <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-white/10 to-white/5 backdrop-blur-lg border border-white/20 p-8">
+                        <div className="absolute top-0 right-0 w-40 h-40 bg-blue-500/10 rounded-full blur-3xl" />
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Form */}
-                    <div className="lg:col-span-2">
-                        <Card className="border-0 shadow-sm hover:shadow-md transition-all">
-                            <CardHeader>
-                                <CardTitle>Data Kesehatan Anda</CardTitle>
-                                <CardDescription>Isi form untuk mendapatkan analisis kesehatan</CardDescription>
-                            </CardHeader>
+                        <div className="relative z-10">
+                            <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-3">
+                                <Heart className="w-6 h-6 text-red-500" />
+                                Pengguna Aktif
+                            </h2>
 
-                            <CardContent>
-                                <form onSubmit={handleSubmit} className="space-y-6">
-                                    {/* Basic Measurements */}
-                                    <div>
-                                        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                                            <Activity className="w-5 h-5 text-blue-600" />
-                                            Pengukuran Dasar
-                                        </h3>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div className="space-y-2">
-                                                <label className="text-sm font-medium text-gray-700">
-                                                    Tinggi Badan (cm) *
-                                                </label>
-                                                <Input
-                                                    type="number"
-                                                    name="height"
-                                                    value={formData.height || ""}
-                                                    onChange={handleChange}
-                                                    required
-                                                    min="0"
-                                                    step="0.1"
-                                                    placeholder="170"
-                                                    className="h-10"
-                                                />
-                                            </div>
+                            <div className="flex items-center gap-6">
+                                <div className="w-20 h-20 rounded-full bg-linear-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white text-2xl font-bold shrink-0">
+                                    {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
+                                </div>
 
-                                            <div className="space-y-2">
-                                                <label className="text-sm font-medium text-gray-700">
-                                                    Berat Badan (kg) *
-                                                </label>
-                                                <Input
-                                                    type="number"
-                                                    name="weight"
-                                                    value={formData.weight || ""}
-                                                    onChange={handleChange}
-                                                    required
-                                                    min="0"
-                                                    step="0.1"
-                                                    placeholder="65"
-                                                    className="h-10"
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Vital Signs */}
-                                    <div>
-                                        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                                            <Droplets className="w-5 h-5 text-red-600" />
-                                            Tanda Vital
-                                        </h3>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div className="space-y-2">
-                                                <label className="text-sm font-medium text-gray-700">
-                                                    Tekanan Darah
-                                                </label>
-                                                <Input
-                                                    type="text"
-                                                    name="bloodPressure"
-                                                    value={formData.bloodPressure || ""}
-                                                    onChange={handleChange}
-                                                    placeholder="120/80"
-                                                    className="h-10"
-                                                />
-                                            </div>
-
-                                            <div className="space-y-2">
-                                                <label className="text-sm font-medium text-gray-700">
-                                                    Gula Darah (mg/dL)
-                                                </label>
-                                                <Input
-                                                    type="number"
-                                                    name="bloodSugar"
-                                                    value={formData.bloodSugar || ""}
-                                                    onChange={handleChange}
-                                                    min="0"
-                                                    step="0.1"
-                                                    placeholder="100"
-                                                    className="h-10"
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Other Measurements */}
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                                            <Pill className="w-4 h-4" />
-                                            Kolesterol (mg/dL)
-                                        </label>
-                                        <Input
-                                            type="number"
-                                            name="cholesterol"
-                                            value={formData.cholesterol || ""}
-                                            onChange={handleChange}
-                                            min="0"
-                                            step="0.1"
-                                            placeholder="200"
-                                            className="h-10"
-                                        />
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-medium text-gray-700">
-                                            Catatan Tambahan
-                                        </label>
-                                        <Textarea
-                                            name="notes"
-                                            value={formData.notes || ""}
-                                            onChange={handleChange}
-                                            placeholder="Tulis catatan tentang kesehatan Anda..."
-                                            className="h-24"
-                                        />
-                                    </div>
-
-                                    <Button
-                                        type="submit"
-                                        disabled={isLoading || !token}
-                                        className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white"
-                                    >
-                                        {!token ? (
-                                            <>
-                                                <span className="inline-block animate-spin mr-2 h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
-                                                Memuat...
-                                            </>
-                                        ) : isLoading ? (
-                                            <>
-                                                <span className="inline-block animate-spin mr-2 h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
-                                                Memproses...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <TrendingUp className="w-4 h-4 mr-2" />
-                                                Hitung BMI & Simpan Data
-                                            </>
-                                        )}
-                                    </Button>
-                                </form>
-                            </CardContent>
-                        </Card>
+                                <div>
+                                    <p className="text-2xl font-bold text-white">{user?.name || "User"}</p>
+                                    <p className="text-gray-400 text-sm mt-1">{user?.email}</p>
+                                    {user?.phone && (
+                                        <p className="text-gray-400 text-sm">{user.phone}</p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
-                    {/* Info Box */}
-                    <div>
-                        <Card className="border-0 shadow-lg bg-linear-to-br from-blue-50 to-indigo-50">
-                            <CardHeader>
-                                <CardTitle className="text-lg">Informasi BMI</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-4 text-sm">
-                                <div className="space-y-2">
-                                    <div className="flex items-start gap-3">
-                                        <div className="w-2 h-2 bg-blue-600 rounded-full mt-1.5 shrink-0"></div>
+                    {/* Messages */}
+                    {error && (
+                        <div className="flex items-start gap-3 p-4 rounded-2xl bg-red-500/20 border border-red-500/40 backdrop-blur-lg">
+                            <AlertCircle className="w-5 h-5 text-red-400 mt-0.5 shrink-0" />
+                            <p className="text-red-200 text-sm">{error}</p>
+                        </div>
+                    )}
+
+                    {success && (
+                        <div className="flex items-start gap-3 p-4 rounded-2xl bg-green-500/20 border border-green-500/40 backdrop-blur-lg">
+                            <CheckCircle className="w-5 h-5 text-green-400 mt-0.5 shrink-0" />
+                            <p className="text-green-200 text-sm">{success}</p>
+                        </div>
+                    )}
+
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        {/* Form */}
+                        <div className="lg:col-span-2">
+                            <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-white/10 to-white/5 backdrop-blur-lg border border-white/20 p-8">
+                                <div className="absolute top-0 left-0 w-40 h-40 bg-purple-500/10 rounded-full blur-3xl" />
+
+                                <div className="relative z-10">
+                                    <h3 className="text-2xl font-bold text-white mb-8">Data Kesehatan Anda</h3>
+
+                                    <form onSubmit={handleSubmit} className="space-y-8">
+                                        {/* Basic Measurements */}
                                         <div>
-                                            <p className="font-semibold text-gray-900">Kurang: &lt;18.5</p>
-                                            <p className="text-gray-600 text-xs">Berat badan kurang</p>
+                                            <h4 className="text-lg font-bold text-white mb-6 flex items-center gap-3">
+                                                <Activity className="w-6 h-6 text-blue-400" />
+                                                Pengukuran Dasar
+                                            </h4>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div className="space-y-3">
+                                                    <label className="text-sm font-semibold text-gray-200">
+                                                        Tinggi Badan (cm) *
+                                                    </label>
+                                                    <Input
+                                                        type="number"
+                                                        name="height"
+                                                        value={formData.height || ""}
+                                                        onChange={handleChange}
+                                                        required
+                                                        min="0"
+                                                        step="0.1"
+                                                        placeholder="170"
+                                                        className="bg-white/10 border-white/20 text-white placeholder-gray-500 rounded-xl h-11 focus:border-blue-400"
+                                                    />
+                                                </div>
+
+                                                <div className="space-y-3">
+                                                    <label className="text-sm font-semibold text-gray-200">
+                                                        Berat Badan (kg) *
+                                                    </label>
+                                                    <Input
+                                                        type="number"
+                                                        name="weight"
+                                                        value={formData.weight || ""}
+                                                        onChange={handleChange}
+                                                        required
+                                                        min="0"
+                                                        step="0.1"
+                                                        placeholder="65"
+                                                        className="bg-white/10 border-white/20 text-white placeholder-gray-500 rounded-xl h-11 focus:border-blue-400"
+                                                    />
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div className="flex items-start gap-3">
-                                        <div className="w-2 h-2 bg-green-600 rounded-full mt-1.5 shrink-0"></div>
+
+                                        {/* Vital Signs */}
                                         <div>
-                                            <p className="font-semibold text-gray-900">Normal: 18.5-24.9</p>
-                                            <p className="text-gray-600 text-xs">Berat badan ideal</p>
+                                            <h4 className="text-lg font-bold text-white mb-6 flex items-center gap-3">
+                                                <Droplets className="w-6 h-6 text-red-400" />
+                                                Tanda Vital
+                                            </h4>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div className="space-y-3">
+                                                    <label className="text-sm font-semibold text-gray-200">
+                                                        Tekanan Darah
+                                                    </label>
+                                                    <Input
+                                                        type="text"
+                                                        name="bloodPressure"
+                                                        value={formData.bloodPressure || ""}
+                                                        onChange={handleChange}
+                                                        placeholder="120/80"
+                                                        className="bg-white/10 border-white/20 text-white placeholder-gray-500 rounded-xl h-11 focus:border-blue-400"
+                                                    />
+                                                </div>
+
+                                                <div className="space-y-3">
+                                                    <label className="text-sm font-semibold text-gray-200">
+                                                        Gula Darah (mg/dL)
+                                                    </label>
+                                                    <Input
+                                                        type="number"
+                                                        name="bloodSugar"
+                                                        value={formData.bloodSugar || ""}
+                                                        onChange={handleChange}
+                                                        placeholder="100"
+                                                        min="0"
+                                                        className="bg-white/10 border-white/20 text-white placeholder-gray-500 rounded-xl h-11 focus:border-blue-400"
+                                                    />
+                                                </div>
+
+                                                <div className="space-y-3">
+                                                    <label className="text-sm font-semibold text-gray-200">
+                                                        Kolesterol (mg/dL)
+                                                    </label>
+                                                    <Input
+                                                        type="number"
+                                                        name="cholesterol"
+                                                        value={formData.cholesterol || ""}
+                                                        onChange={handleChange}
+                                                        placeholder="200"
+                                                        min="0"
+                                                        className="bg-white/10 border-white/20 text-white placeholder-gray-500 rounded-xl h-11 focus:border-blue-400"
+                                                    />
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div className="flex items-start gap-3">
-                                        <div className="w-2 h-2 bg-yellow-600 rounded-full mt-1.5 shrink-0"></div>
+
+                                        {/* Additional Notes */}
                                         <div>
-                                            <p className="font-semibold text-gray-900">Berlebih: 25-29.9</p>
-                                            <p className="text-gray-600 text-xs">Berat badan berlebih</p>
+                                            <h4 className="text-lg font-bold text-white mb-6 flex items-center gap-3">
+                                                <Pill className="w-6 h-6 text-purple-400" />
+                                                Catatan Tambahan
+                                            </h4>
+                                            <Textarea
+                                                name="notes"
+                                                value={formData.notes || ""}
+                                                onChange={handleChange}
+                                                placeholder="Tulis catatan tentang kesehatan Anda..."
+                                                className="bg-white/10 border-white/20 text-white placeholder-gray-500 rounded-xl focus:border-blue-400"
+                                                rows={4}
+                                            />
                                         </div>
-                                    </div>
-                                    <div className="flex items-start gap-3">
-                                        <div className="w-2 h-2 bg-red-600 rounded-full mt-1.5 shrink-0"></div>
-                                        <div>
-                                            <p className="font-semibold text-gray-900">Obese: ≥30</p>
-                                            <p className="text-gray-600 text-xs">Obesitas</p>
+
+                                        {/* Submit Button */}
+                                        <div className="flex gap-3 pt-4">
+                                            <Button
+                                                type="submit"
+                                                disabled={isLoading}
+                                                className="flex-1 bg-linear-to-r from-blue-600 to-cyan-600 text-white font-semibold py-3 rounded-xl hover:shadow-lg hover:shadow-blue-500/50 transition-all duration-300 disabled:opacity-50"
+                                            >
+                                                {isLoading ? "Memproses..." : "Simpan & Analisis"}
+                                            </Button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Info Sidebar */}
+                        <div className="space-y-6">
+                            <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-white/10 to-white/5 backdrop-blur-lg border border-white/20 p-6">
+                                <div className="absolute top-0 right-0 w-20 h-20 bg-green-500/10 rounded-full blur-2xl" />
+
+                                <div className="relative z-10">
+                                    <h4 className="font-bold text-white text-lg mb-4">Panduan BMI</h4>
+                                    <div className="space-y-4 text-sm">
+                                        <div className="flex items-start gap-3">
+                                            <div className="w-2 h-2 bg-blue-400 rounded-full mt-2 shrink-0"></div>
+                                            <div>
+                                                <p className="font-semibold text-white">Kurang: &lt;18.5</p>
+                                                <p className="text-gray-400 text-xs">Berat badan kurang</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-start gap-3">
+                                            <div className="w-2 h-2 bg-green-400 rounded-full mt-2 shrink-0"></div>
+                                            <div>
+                                                <p className="font-semibold text-white">Normal: 18.5-24.9</p>
+                                                <p className="text-gray-400 text-xs">Berat badan normal</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-start gap-3">
+                                            <div className="w-2 h-2 bg-yellow-400 rounded-full mt-2 shrink-0"></div>
+                                            <div>
+                                                <p className="font-semibold text-white">Berlebih: 25-29.9</p>
+                                                <p className="text-gray-400 text-xs">Berat badan berlebih</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-start gap-3">
+                                            <div className="w-2 h-2 bg-red-400 rounded-full mt-2 shrink-0"></div>
+                                            <div>
+                                                <p className="font-semibold text-white">Obese: ≥30</p>
+                                                <p className="text-gray-400 text-xs">Obesitas</p>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </CardContent>
-                        </Card>
+                            </div>
+                        </div>
                     </div>
+
+                    {/* Result */}
+                    {result && (
+                        <div className="space-y-6">
+                            {/* Result Cards */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-white/10 to-white/5 backdrop-blur-lg border border-white/20 p-6">
+                                    <div className="absolute top-0 right-0 w-20 h-20 bg-blue-500/10 rounded-full blur-2xl" />
+                                    <div className="relative z-10">
+                                        <p className="text-gray-400 text-sm mb-2">Tinggi Badan</p>
+                                        <p className="text-4xl font-bold text-white">{result.height}</p>
+                                        <p className="text-xs text-gray-500 mt-2">cm</p>
+                                    </div>
+                                </div>
+
+                                <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-white/10 to-white/5 backdrop-blur-lg border border-white/20 p-6">
+                                    <div className="absolute top-0 right-0 w-20 h-20 bg-purple-500/10 rounded-full blur-2xl" />
+                                    <div className="relative z-10">
+                                        <p className="text-gray-400 text-sm mb-2">Berat Badan</p>
+                                        <p className="text-4xl font-bold text-white">{result.weight}</p>
+                                        <p className="text-xs text-gray-500 mt-2">kg</p>
+                                    </div>
+                                </div>
+
+                                <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-cyan-500/20 to-blue-500/20 backdrop-blur-lg border border-cyan-500/40 p-6">
+                                    <div className="absolute top-0 right-0 w-20 h-20 bg-cyan-500/20 rounded-full blur-2xl" />
+                                    <div className="relative z-10">
+                                        <p className="text-gray-300 text-sm mb-2">BMI Anda</p>
+                                        <p className="text-4xl font-bold bg-linear-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
+                                            {result.bmi.toFixed(1)}
+                                        </p>
+                                        <p className="text-xs text-gray-400 mt-2">Body Mass Index</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Status Card */}
+                            <div className={`relative overflow-hidden rounded-2xl bg-linear-to-br ${getStatusBgGradient(result.status)} backdrop-blur-lg border p-8 text-center`}>
+                                <div className="absolute top-0 right-0 w-40 h-40 opacity-10 rounded-full blur-3xl" />
+
+                                <div className="relative z-10">
+                                    <p className="text-gray-300 text-sm mb-4 font-semibold uppercase tracking-wider">
+                                        Status Kesehatan Anda
+                                    </p>
+                                    <p className={`text-5xl font-bold ${getStatusColor(result.status)} mb-6`}>
+                                        {getStatusText(result.status)}
+                                    </p>
+                                    <p className="text-gray-300 text-sm max-w-lg mx-auto">
+                                        Berdasarkan hasil perhitungan BMI, status kesehatan Anda menunjukkan kategori tersebut. Untuk informasi lebih detail, konsultasikan dengan profesional kesehatan.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
-
-                {/* Result */}
-                {result && (
-                    <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        <Card className="border-0 shadow-lg">
-                            <CardContent className="p-6">
-                                <p className="text-sm text-gray-600 mb-2">Tinggi Badan</p>
-                                <p className="text-3xl font-bold text-gray-900">{result.height}</p>
-                                <p className="text-xs text-gray-500 mt-1">cm</p>
-                            </CardContent>
-                        </Card>
-
-                        <Card className="border-0 shadow-lg">
-                            <CardContent className="p-6">
-                                <p className="text-sm text-gray-600 mb-2">Berat Badan</p>
-                                <p className="text-3xl font-bold text-gray-900">{result.weight}</p>
-                                <p className="text-xs text-gray-500 mt-1">kg</p>
-                            </CardContent>
-                        </Card>
-
-                        <Card className="border-0 shadow-lg bg-linear-to-br from-blue-50 to-indigo-50">
-                            <CardContent className="p-6">
-                                <p className="text-sm text-gray-600 mb-2">BMI Anda</p>
-                                <p className="text-3xl font-bold text-blue-600">{result.bmi}</p>
-                                <p className="text-xs text-gray-500 mt-1">Body Mass Index</p>
-                            </CardContent>
-                        </Card>
-                    </div>
-                )}
-
-                {result && (
-                    <Card className={`border-2 shadow-lg mt-6 ${getStatusBg(result.status)}`}>
-                        <CardContent className="p-8 text-center">
-                            <p className="text-sm text-gray-600 mb-3 font-medium">Status Kesehatan Anda</p>
-                            <p className={`text-4xl font-bold ${getStatusColor(result.status)} mb-4`}>
-                                {getStatusText(result.status)}
-                            </p>
-                            <p className="text-gray-600 text-sm max-w-md mx-auto">
-                                Berdasarkan hasil perhitungan BMI, status kesehatan Anda menunjukkan kategori tersebut. Untuk informasi lebih detail, konsultasikan dengan profesional kesehatan.
-                            </p>
-                        </CardContent>
-                    </Card>
-                )}
             </main>
         </div>
     );

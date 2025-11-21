@@ -1,437 +1,413 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { IoSend, IoCheckmarkDone } from 'react-icons/io5';
-import { Check, X, Phone, MessageSquare, Info, AlertTriangle, ArrowLeft, Send } from 'lucide-react';
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Sidebar } from "@/components/ui/sidebar";
+import { Input } from "@/components/ui/input";
+import {
+    ArrowLeft,
+    MessageCircle,
+    CheckCircle,
+    AlertCircle,
+    Send,
+    Phone,
+    Bell,
+    ToggleRight,
+    ToggleLeft,
+} from "lucide-react";
 
-interface NotificationResult {
-  success: boolean;
-  message?: string;
-  error?: string;
-  messageId?: string;
-  timestamp?: string;
+interface UserData {
+    id: string;
+    name: string;
+    email: string;
+    phone?: string;
+    profilePhoto?: string;
+}
+
+interface NotificationSettings {
+    dailyReminders: boolean;
+    healthAlerts: boolean;
+    appointmentReminders: boolean;
+    medicationReminders: boolean;
+    weeklyReport: boolean;
 }
 
 export default function NotifikasiWAPage() {
-  const [phoneNumber, setPhoneNumber] = useState<string>('62');
-  const [messageBody, setMessageBody] = useState<string>('');
-  const [loading, setLoading] = useState<boolean>(false);
-  const [result, setResult] = useState<NotificationResult | null>(null);
-  const [messageType, setMessageType] = useState<
-    'custom' | 'alert' | 'screening' | 'verification'
-  >('custom');
-  const [riskData, setRiskData] = useState<{
-    disease: string;
-    riskScore: number;
-  }[]>([{ disease: 'Hipertensi', riskScore: 75 }]);
-  const [severity, setSeverity] = useState<'critical' | 'high' | 'medium'>(
-    'high'
-  );
+    const router = useRouter();
+    const [user, setUser] = useState<UserData | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [phoneNumber, setPhoneNumber] = useState("");
+    const [isVerifying, setIsVerifying] = useState(false);
+    const [isVerified, setIsVerified] = useState(false);
+    const [error, setError] = useState("");
+    const [success, setSuccess] = useState("");
 
-  const generateAlertMessage = () => {
-    const severityLabel =
-      severity === 'critical'
-        ? 'KRITIS'
-        : severity === 'high'
-          ? 'TINGGI'
-          : 'SEDANG';
+    const [settings, setSettings] = useState<NotificationSettings>({
+        dailyReminders: false,
+        healthAlerts: true,
+        appointmentReminders: true,
+        medicationReminders: false,
+        weeklyReport: false,
+    });
 
-    const diseaseList = riskData.map((d) => `• ${d.disease}: ${d.riskScore}%`).join('\n');
+    useEffect(() => {
+        const storedUser = localStorage.getItem("user");
+        if (!storedUser) {
+            router.push("/auth/login");
+            return;
+        }
 
-    return `
-${severityLabel} - ALERT KESEHATAN ANDA
+        try {
+            const userData = JSON.parse(storedUser);
+            setUser(userData);
+            setPhoneNumber(userData.phone || "");
+        } finally {
+            setIsLoading(false);
+        }
+    }, [router]);
 
-Risiko Penyakit Terdeteksi:
-${diseaseList}
+    const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setPhoneNumber(e.target.value);
+    };
 
-SEGERA LAKUKAN:
-• Konsultasi dengan dokter
-• Lakukan pemeriksaan kesehatan
-• Ikuti rekomendasi screening
+    const handleVerifyPhone = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        setError("");
+        setSuccess("");
+        setIsVerifying(true);
 
-Buka aplikasi MedpredictJKN untuk detail lengkap
+        if (!phoneNumber.trim()) {
+            setError("Nomor telepon tidak boleh kosong");
+            setIsVerifying(false);
+            return;
+        }
 
----
-MedpredictJKN - Sistem Prediksi Risiko Penyakit
-    `.trim();
-  };
+        try {
+            const token = localStorage.getItem("token");
+            const response = await fetch("/api/notify-wa", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    phoneNumber,
+                    action: "verify",
+                }),
+            });
 
-  const generateVerificationMessage = () => {
-    const code = Math.random().toString().slice(2, 8);
-    return `Kode verifikasi MedpredictJKN Anda: ${code}\n\nJangan bagikan kode ini kepada siapapun.`;
-  };
+            const data = await response.json();
 
-  const sendNotification = async () => {
-    if (!phoneNumber || phoneNumber === '62') {
-      alert('Masukkan nomor WhatsApp yang valid');
-      return;
-    }
+            if (!response.ok) {
+                setError(data.message || "Gagal memverifikasi nomor");
+                return;
+            }
 
-    let finalMessage = messageBody;
+            setSuccess("Nomor WhatsApp berhasil diverifikasi!");
+            setIsVerified(true);
 
-    if (messageType === 'alert') {
-      finalMessage = generateAlertMessage();
-    } else if (messageType === 'verification') {
-      finalMessage = generateVerificationMessage();
-    }
+            // Update user in localStorage
+            const updatedUser: UserData = { ...user!, phone: phoneNumber };
+            localStorage.setItem("user", JSON.stringify(updatedUser));
+            setUser(updatedUser);
+        } catch (err) {
+            setError(String(err) || "Terjadi kesalahan");
+        } finally {
+            setIsVerifying(false);
+        }
+    };
 
-    if (!finalMessage) {
-      alert('Masukkan pesan terlebih dahulu');
-      return;
-    }
+    const handleSettingToggle = (key: keyof NotificationSettings) => {
+        setSettings((prev) => ({
+            ...prev,
+            [key]: !prev[key],
+        }));
+    };
 
-    setLoading(true);
-    setResult(null);
+    const handleSaveSettings = async () => {
+        setError("");
+        setSuccess("");
 
-    try {
-      const response = await fetch('/api/notify-wa', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          to: phoneNumber,
-          body: finalMessage,
-        }),
-      });
+        try {
+            const token = localStorage.getItem("token");
+            const response = await fetch("/api/notify-wa", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    action: "settings",
+                    settings,
+                }),
+            });
 
-      const data = await response.json();
+            const data = await response.json();
 
-      if (response.ok) {
-        setResult({
-          success: true,
-          message: 'Pesan berhasil dikirim!',
-          messageId: data.message?.id,
-          timestamp: new Date().toISOString(),
-        });
-        setMessageBody('');
-      } else {
-        setResult({
-          success: false,
-          error: data.error || 'Gagal mengirim pesan',
-        });
-      }
-    } catch (error) {
-      setResult({
-        success: false,
-        error: error instanceof Error ? error.message : 'Terjadi kesalahan',
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+            if (!response.ok) {
+                setError(data.message || "Gagal menyimpan pengaturan");
+                return;
+            }
 
-  return (
-    <div className="min-h-screen bg-linear-to-br from-green-50 via-white to-emerald-50 py-8">
-      <div className="max-w-6xl mx-auto px-4">
-        {/* Header */}
-        <div className="mb-8">
-          <Link href="/dashboard" className="inline-flex items-center gap-2 text-green-600 hover:text-green-700 font-medium mb-6">
-            <ArrowLeft className="w-4 h-4" />
-            Kembali ke Dashboard
-          </Link>
-          <div className="flex items-start gap-4">
-            <div className="bg-linear-to-br from-green-600 to-emerald-600 p-3 rounded-full">
-              <MessageSquare className="w-8 h-8 text-white" />
+            setSuccess("Pengaturan notifikasi berhasil disimpan!");
+        } catch (err) {
+            setError(String(err) || "Terjadi kesalahan");
+        }
+    };
+
+    const handleLogout = () => {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        router.push("/auth/login");
+    };
+
+    if (isLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-slate-900 via-slate-800 to-slate-900">
+                <div className="text-center space-y-4">
+                    <div className="inline-flex h-12 w-12 animate-spin rounded-full border-4 border-blue-200 border-t-blue-500"></div>
+                    <p className="text-gray-300 font-medium">Memuat pengaturan...</p>
+                </div>
             </div>
-            <div>
-              <h1 className="text-4xl font-bold text-gray-900 mb-2">
-                Notifikasi WhatsApp
-              </h1>
-              <p className="text-gray-600">
-                Kirim notifikasi kesehatan melalui WhatsApp dengan WhAPI.cloud
-              </p>
-            </div>
-          </div>
-        </div>
+        );
+    }
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Form Section */}
-          <div className="lg:col-span-2 space-y-6">
-            <Card className="border-0 shadow-lg">
-              <CardHeader>
-                <CardTitle>Tipe Notifikasi</CardTitle>
-                <CardDescription>Pilih jenis notifikasi yang ingin dikirim</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {[
-                    { value: 'custom', label: 'Custom', desc: 'Pesan khusus' },
-                    { value: 'alert', label: 'Alert', desc: 'Alert risiko' },
-                    { value: 'screening', label: 'Screening', desc: 'Screening' },
-                    { value: 'verification', label: 'Verifikasi', desc: 'Kode verifikasi' },
-                  ].map((type) => (
-                    <button
-                      key={type.value}
-                      onClick={() =>
-                        setMessageType(
-                          type.value as
-                          | 'custom'
-                          | 'alert'
-                          | 'screening'
-                          | 'verification'
-                        )
-                      }
-                      className={`p-4 rounded-lg border-2 transition-all text-center ${messageType === type.value
-                          ? 'border-green-600 bg-green-50'
-                          : 'border-gray-200 bg-white hover:border-gray-300'
-                        }`}
-                    >
-                      <div className="text-lg mb-1 font-bold text-gray-800">{type.label}</div>
-                      <div className="text-xs font-medium text-gray-600">{type.desc}</div>
-                    </button>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+    return (
+        <div className="min-h-screen bg-linear-to-br from-slate-900 via-slate-800 to-slate-900 flex">
+            {/* Sidebar */}
+            <Sidebar onLogout={handleLogout} userName={user?.name} userEmail={user?.email} />
 
-            {/* Severity Selection */}
-            {messageType === 'alert' && (
-              <Card className="border-0 shadow-lg">
-                <CardHeader>
-                  <CardTitle>Tingkat Keparahan</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex gap-3">
-                    {[
-                      { value: 'critical' as const, label: 'KRITIS', color: 'border-red-500 bg-red-50' },
-                      { value: 'high' as const, label: 'TINGGI', color: 'border-orange-500 bg-orange-50' },
-                      { value: 'medium' as const, label: 'SEDANG', color: 'border-yellow-500 bg-yellow-50' },
-                    ].map((sev) => (
-                      <button
-                        key={sev.value}
-                        onClick={() => setSeverity(sev.value)}
-                        className={`px-4 py-3 rounded-lg border-2 font-medium transition-all ${severity === sev.value
-                            ? `border-2 ${sev.color}`
-                            : 'border-gray-200 bg-white hover:border-gray-300'
-                          }`}
-                      >
-                        {sev.label}
-                      </button>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Risk Data */}
-            {messageType === 'alert' && (
-              <Card className="border-0 shadow-lg">
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <AlertTriangle className="w-5 h-5" />
-                    Data Risiko Penyakit
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {riskData.map((risk, idx) => (
-                    <div key={idx} className="flex gap-3">
-                      <Input
-                        type="text"
-                        value={risk.disease}
-                        onChange={(e) => {
-                          const newData = [...riskData];
-                          newData[idx].disease = e.target.value;
-                          setRiskData(newData);
-                        }}
-                        placeholder="Nama penyakit"
-                        className="flex-1 h-10"
-                      />
-                      <Input
-                        type="number"
-                        value={risk.riskScore}
-                        onChange={(e) => {
-                          const newData = [...riskData];
-                          newData[idx].riskScore = parseInt(e.target.value) || 0;
-                          setRiskData(newData);
-                        }}
-                        placeholder="Skor %"
-                        min="0"
-                        max="100"
-                        className="w-24 h-10"
-                      />
-                    </div>
-                  ))}
-                  <Button
-                    type="button"
-                    onClick={() =>
-                      setRiskData([
-                        ...riskData,
-                        { disease: '', riskScore: 0 },
-                      ])
-                    }
-                    variant="outline"
-                    className="w-full h-10"
-                  >
-                    + Tambah Penyakit
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Phone Number */}
-            <Card className="border-0 shadow-lg">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Phone className="w-5 h-5" />
-                  Nomor WhatsApp Tujuan
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Input
-                  type="tel"
-                  value={phoneNumber}
-                  onChange={(e) => {
-                    let val = e.target.value.replace(/\D/g, '');
-                    if (!val.startsWith('62')) {
-                      val = '62' + val;
-                    }
-                    setPhoneNumber(val);
-                  }}
-                  placeholder="62xxxxxxxxxx"
-                  className="h-11"
-                />
-                <p className="text-xs text-gray-600 bg-blue-50 p-3 rounded border border-blue-200">
-                  Format: 62 + nomor (tanpa 0 di awal). Contoh: 628123456789
-                </p>
-              </CardContent>
-            </Card>
-
-            {/* Message Body */}
-            <Card className="border-0 shadow-lg">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MessageSquare className="w-5 h-5" />
-                  Isi Pesan
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Textarea
-                  value={
-                    messageType === 'alert'
-                      ? generateAlertMessage()
-                      : messageType === 'verification'
-                        ? generateVerificationMessage()
-                        : messageBody
-                  }
-                  onChange={(e) => setMessageBody(e.target.value)}
-                  placeholder="Tulis pesan WhatsApp Anda di sini..."
-                  disabled={messageType !== 'custom'}
-                  className="h-32"
-                />
-                <div className="flex justify-between items-center text-sm text-gray-600">
-                  <span>Karakter: {messageType === 'custom' ? messageBody.length : generateAlertMessage().length}</span>
-                  <span className={messageType === 'custom' ? '' : 'text-gray-400'}>
-                    {messageType !== 'custom' ? 'Template otomatis' : 'Pesan khusus'}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Send Button */}
-            <Button
-              onClick={sendNotification}
-              disabled={loading}
-              className="w-full h-12 bg-linear-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold text-lg"
-            >
-              <Send className="w-5 h-5 mr-2" />
-              {loading ? 'Mengirim...' : 'Kirim Notifikasi'}
-            </Button>
-          </div>
-
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* API Status */}
-            <Card className="border-0 shadow-lg">
-              <CardHeader>
-                <CardTitle className="text-lg">Status Sistem</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <Check className="w-5 h-5 text-green-600" />
-                  <span className="text-sm text-gray-700">WhAPI Connected</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Check className="w-5 h-5 text-green-600" />
-                  <span className="text-sm text-gray-700">Database Ready</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Check className="w-5 h-5 text-green-600" />
-                  <span className="text-sm text-gray-700">API Aktif</span>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Result */}
-            {result && (
-              <Card className={`border-2 ${result.success ? 'border-green-500 bg-green-50' : 'border-red-500 bg-red-50'
-                } shadow-lg`}>
-                <CardContent className="p-6">
-                  <div className="flex items-start gap-3">
-                    {result.success ? (
-                      <IoCheckmarkDone className="text-3xl text-green-600 shrink-0" />
-                    ) : (
-                      <X className="w-6 h-6 text-red-600 shrink-0 mt-0.5" />
-                    )}
-                    <div>
-                      <h4 className={`font-bold mb-2 ${result.success ? 'text-green-700' : 'text-red-700'
-                        }`}>
-                        {result.success ? 'Berhasil!' : 'Gagal'}
-                      </h4>
-                      <p className="text-sm text-gray-700 mb-3">
-                        {result.message || result.error}
-                      </p>
-                      {result.messageId && (
-                        <div className="bg-white p-2 rounded text-xs text-gray-600 break-all border border-gray-200">
-                          <strong>ID:</strong> {result.messageId}
+            {/* Main Content */}
+            <main className="flex-1 ml-64">
+                {/* Header */}
+                <header className="sticky top-0 z-40 backdrop-blur-xl bg-white/10 border-b border-white/10">
+                    <div className="px-8 py-6 flex items-center justify-between">
+                        <Link
+                            href="/dashboard"
+                            className="inline-flex items-center gap-2 text-gray-400 hover:text-white font-medium transition-colors"
+                        >
+                            <ArrowLeft className="w-4 h-4" />
+                            Kembali
+                        </Link>
+                        <div className="flex items-center gap-3">
+                            <div className="bg-linear-to-r from-green-500 to-emerald-500 p-2.5 rounded-xl">
+                                <MessageCircle className="w-5 h-5 text-white" />
+                            </div>
+                            <div>
+                                <h1 className="text-2xl font-bold text-white">Notifikasi WhatsApp</h1>
+                                <p className="text-xs text-gray-400">Kelola pengaturan notifikasi kesehatan melalui WhatsApp</p>
+                            </div>
                         </div>
-                      )}
-                      {result.timestamp && (
-                        <p className="text-xs text-gray-600 mt-3">
-                          {new Date(result.timestamp).toLocaleString('id-ID')}
-                        </p>
-                      )}
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+                </header>
 
-            {/* Info */}
-            <Card className="border-0 shadow-lg bg-linear-to-br from-blue-50 to-cyan-50">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Info className="w-5 h-5" />
-                  Tips & Panduan
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2 text-sm text-gray-700">
-                <div className="flex gap-2">
-                  <span>•</span>
-                  <span>Gunakan format nomor dengan kode negara 62</span>
+                {/* Content */}
+                <div className="p-8">
+                    <div className="max-w-4xl mx-auto space-y-6">
+                        {/* Messages */}
+                        {error && (
+                            <div className="flex items-start gap-3 p-4 rounded-lg bg-red-500/20 border border-red-500/40 backdrop-blur">
+                                <AlertCircle className="w-5 h-5 text-red-400 mt-0.5 shrink-0" />
+                                <p className="text-red-300 text-sm">{error}</p>
+                            </div>
+                        )}
+
+                        {success && (
+                            <div className="flex items-start gap-3 p-4 rounded-lg bg-green-500/20 border border-green-500/40 backdrop-blur">
+                                <CheckCircle className="w-5 h-5 text-green-400 mt-0.5 shrink-0" />
+                                <p className="text-green-300 text-sm">{success}</p>
+                            </div>
+                        )}
+
+                        {/* Verification Section */}
+                        <div className="relative overflow-hidden rounded-3xl bg-linear-to-br from-white/10 to-white/5 backdrop-blur-lg border border-white/20 p-8">
+                            <div className="absolute top-0 right-0 w-40 h-40 bg-green-500/10 rounded-full blur-3xl" />
+
+                            <div className="relative z-10">
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className="w-12 h-12 rounded-lg bg-green-500/20 border border-green-500/40 flex items-center justify-center">
+                                        <Phone className="w-6 h-6 text-green-400" />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-xl font-bold text-white">Verifikasi Nomor WhatsApp</h2>
+                                        <p className="text-gray-400 text-sm">Masukkan nomor WhatsApp Anda untuk menerima notifikasi</p>
+                                    </div>
+                                </div>
+
+                                <form onSubmit={handleVerifyPhone} className="space-y-4">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium text-gray-300">
+                                            Nomor WhatsApp (Format: +62xxxxxxxxxx)
+                                        </label>
+                                        <Input
+                                            type="tel"
+                                            value={phoneNumber}
+                                            onChange={handlePhoneChange}
+                                            placeholder="+62812345678"
+                                            disabled={isVerified}
+                                            className="h-11 bg-white/5 border border-white/20 text-white placeholder:text-gray-500 rounded-lg focus:border-green-400 focus:ring-green-400/20 disabled:opacity-50"
+                                        />
+                                    </div>
+
+                                    {!isVerified ? (
+                                        <button
+                                            type="submit"
+                                            disabled={isVerifying}
+                                            className="w-full h-11 bg-linear-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2"
+                                        >
+                                            {isVerifying ? (
+                                                <>
+                                                    <span className="inline-block animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
+                                                    Memverifikasi...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Send className="w-4 h-4" />
+                                                    Verifikasi Nomor
+                                                </>
+                                            )}
+                                        </button>
+                                    ) : (
+                                        <div className="flex items-center gap-2 p-4 rounded-lg bg-green-500/20 border border-green-500/40">
+                                            <CheckCircle className="w-5 h-5 text-green-400" />
+                                            <span className="text-green-300 font-medium">Nomor terverifikasi!</span>
+                                        </div>
+                                    )}
+                                </form>
+                            </div>
+                        </div>
+
+                        {/* Notification Settings */}
+                        {isVerified && (
+                            <div className="relative overflow-hidden rounded-3xl bg-linear-to-br from-white/10 to-white/5 backdrop-blur-lg border border-white/20 p-8">
+                                <div className="absolute top-0 right-0 w-40 h-40 bg-blue-500/10 rounded-full blur-3xl" />
+
+                                <div className="relative z-10">
+                                    <div className="flex items-center gap-3 mb-8">
+                                        <div className="w-12 h-12 rounded-lg bg-blue-500/20 border border-blue-500/40 flex items-center justify-center">
+                                            <Bell className="w-6 h-6 text-blue-400" />
+                                        </div>
+                                        <div>
+                                            <h2 className="text-xl font-bold text-white">Pengaturan Notifikasi</h2>
+                                            <p className="text-gray-400 text-sm">Pilih jenis notifikasi yang ingin Anda terima</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-4 mb-8">
+                                        {/* Daily Reminders */}
+                                        <div className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 transition-all">
+                                            <div>
+                                                <p className="text-white font-medium">Pengingat Harian</p>
+                                                <p className="text-gray-400 text-sm">Notifikasi kesehatan setiap hari</p>
+                                            </div>
+                                            <button
+                                                onClick={() => handleSettingToggle("dailyReminders")}
+                                                className="transition-all"
+                                            >
+                                                {settings.dailyReminders ? (
+                                                    <ToggleRight className="w-6 h-6 text-green-400" />
+                                                ) : (
+                                                    <ToggleLeft className="w-6 h-6 text-gray-500" />
+                                                )}
+                                            </button>
+                                        </div>
+
+                                        {/* Health Alerts */}
+                                        <div className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 transition-all">
+                                            <div>
+                                                <p className="text-white font-medium">Alert Kesehatan</p>
+                                                <p className="text-gray-400 text-sm">Notifikasi untuk kondisi kesehatan kritis</p>
+                                            </div>
+                                            <button
+                                                onClick={() => handleSettingToggle("healthAlerts")}
+                                                className="transition-all"
+                                            >
+                                                {settings.healthAlerts ? (
+                                                    <ToggleRight className="w-6 h-6 text-green-400" />
+                                                ) : (
+                                                    <ToggleLeft className="w-6 h-6 text-gray-500" />
+                                                )}
+                                            </button>
+                                        </div>
+
+                                        {/* Appointment Reminders */}
+                                        <div className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 transition-all">
+                                            <div>
+                                                <p className="text-white font-medium">Pengingat Jadwal</p>
+                                                <p className="text-gray-400 text-sm">Notifikasi sebelum jadwal kesehatan Anda</p>
+                                            </div>
+                                            <button
+                                                onClick={() => handleSettingToggle("appointmentReminders")}
+                                                className="transition-all"
+                                            >
+                                                {settings.appointmentReminders ? (
+                                                    <ToggleRight className="w-6 h-6 text-green-400" />
+                                                ) : (
+                                                    <ToggleLeft className="w-6 h-6 text-gray-500" />
+                                                )}
+                                            </button>
+                                        </div>
+
+                                        {/* Medication Reminders */}
+                                        <div className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 transition-all">
+                                            <div>
+                                                <p className="text-white font-medium">Pengingat Obat</p>
+                                                <p className="text-gray-400 text-sm">Notifikasi untuk waktu minum obat</p>
+                                            </div>
+                                            <button
+                                                onClick={() => handleSettingToggle("medicationReminders")}
+                                                className="transition-all"
+                                            >
+                                                {settings.medicationReminders ? (
+                                                    <ToggleRight className="w-6 h-6 text-green-400" />
+                                                ) : (
+                                                    <ToggleLeft className="w-6 h-6 text-gray-500" />
+                                                )}
+                                            </button>
+                                        </div>
+
+                                        {/* Weekly Report */}
+                                        <div className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 transition-all">
+                                            <div>
+                                                <p className="text-white font-medium">Laporan Mingguan</p>
+                                                <p className="text-gray-400 text-sm">Ringkasan kesehatan setiap minggu</p>
+                                            </div>
+                                            <button
+                                                onClick={() => handleSettingToggle("weeklyReport")}
+                                                className="transition-all"
+                                            >
+                                                {settings.weeklyReport ? (
+                                                    <ToggleRight className="w-6 h-6 text-green-400" />
+                                                ) : (
+                                                    <ToggleLeft className="w-6 h-6 text-gray-500" />
+                                                )}
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <button
+                                        onClick={handleSaveSettings}
+                                        className="w-full h-11 bg-linear-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2"
+                                    >
+                                        <CheckCircle className="w-4 h-4" />
+                                        Simpan Pengaturan
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Info Card */}
+                        <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-cyan-500/10 to-blue-500/10 backdrop-blur-lg border border-cyan-500/20 p-6">
+                            <div className="relative z-10">
+                                <p className="text-cyan-300 text-sm">
+                                    💡 <span className="font-medium">Info:</span> Notifikasi akan dikirimkan langsung ke WhatsApp Anda. Pastikan nomor WhatsApp Anda aktif dan terdaftar di aplikasi WhatsApp untuk menerima notifikasi dengan baik.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div className="flex gap-2">
-                  <span>•</span>
-                  <span>Pastikan nomor terdaftar WhatsApp aktif</span>
-                </div>
-                <div className="flex gap-2">
-                  <span>•</span>
-                  <span>API WhAPI.cloud harus aktif dan terkonfigurasi</span>
-                </div>
-                <div className="flex gap-2">
-                  <span>•</span>
-                  <span>Pesan dikirim real-time ke nomor tujuan</span>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+            </main>
         </div>
-      </div>
-    </div>
-  );
+    );
 }

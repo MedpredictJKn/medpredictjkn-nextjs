@@ -4,10 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertCircle, UserPlus, Mail, Lock, User, Phone } from "lucide-react";
+import { AlertCircle, Mail, Lock, User, Phone } from "lucide-react";
 
 export default function RegisterPage() {
     const router = useRouter();
@@ -58,48 +56,53 @@ export default function RegisterPage() {
     };
 
     return (
-        <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center p-4">
-            <div className="w-full max-w-md space-y-6">
+        <div className="min-h-screen bg-linear-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4 relative">
+            {/* Background Effects */}
+            <div className="absolute top-0 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl"></div>
+            <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-pink-500/20 rounded-full blur-3xl"></div>
+
+            <div className="w-full max-w-md space-y-6 relative z-10">
                 {/* Logo Section */}
-                <div className="text-center space-y-3">
+                <div className="text-center space-y-3 mb-8">
                     <div className="flex justify-center mb-4">
                         <Image
                             src="/images/medpredictjkn.png"
-                            alt="MedPredict Logo"
-                            width={60}
-                            height={60}
-                            className="object-contain"
+                            alt="MedPredict JKN Logo"
+                            width={80}
+                            height={80}
+                            priority
+                            className="drop-shadow-lg"
                         />
                     </div>
                     <div>
-                        <h1 className="text-3xl font-bold">
-                            <span style={{ color: "#123c70" }}>Medpredict</span><span style={{ color: "#76c04a" }}>JKn</span>
+                        <h1 className="text-4xl font-bold">
+                            <span className="bg-linear-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">MedPredict</span>
                         </h1>
-                        <p className="text-sm text-gray-600 mt-1">Buat Akun Baru</p>
+                        <p className="text-sm text-gray-400 mt-2">Daftar Akun Baru</p>
                     </div>
                 </div>
 
                 {/* Register Form Card */}
-                <Card className="border-0 shadow-sm">
-                    <CardHeader className="space-y-1">
-                        <CardTitle>Daftar Akun</CardTitle>
-                        <CardDescription>
-                            Isi data di bawah untuk membuat akun baru
-                        </CardDescription>
-                    </CardHeader>
+                <div className="relative overflow-hidden rounded-3xl bg-linear-to-br from-white/10 to-white/5 backdrop-blur-xl border border-white/20 p-8 shadow-2xl">
+                    <div className="absolute top-0 right-0 w-40 h-40 bg-purple-500/10 rounded-full blur-3xl" />
 
-                    <CardContent className="space-y-4">
+                    <div className="relative z-10">
+                        <div className="space-y-2 mb-8">
+                            <h2 className="text-2xl font-bold text-white">Daftar Akun</h2>
+                            <p className="text-gray-400 text-sm">Isi data di bawah untuk membuat akun baru</p>
+                        </div>
+
                         {error && (
-                            <div className="flex items-start gap-3 p-4 rounded-lg bg-red-50 border border-red-200">
-                                <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 shrink-0" />
-                                <p className="text-sm text-red-700">{error}</p>
+                            <div className="flex items-start gap-3 p-4 rounded-xl bg-red-500/20 border border-red-500/40 mb-6 backdrop-blur">
+                                <AlertCircle className="w-5 h-5 text-red-400 mt-0.5 shrink-0" />
+                                <p className="text-red-300 text-sm">{error}</p>
                             </div>
                         )}
 
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                                    <User className="w-4 h-4" />
+                                <label className="text-sm font-medium text-gray-300 flex items-center gap-2">
+                                    <User className="w-4 h-4 text-green-400" />
                                     Nama Lengkap
                                 </label>
                                 <Input
@@ -108,14 +111,14 @@ export default function RegisterPage() {
                                     value={formData.name}
                                     onChange={handleChange}
                                     required
-                                    placeholder="John Doe"
-                                    className="h-10"
+                                    placeholder="Reyhan Capri Moraga"
+                                    className="h-11 bg-white/5 border border-white/20 text-white placeholder:text-gray-500 rounded-lg focus:border-purple-400 focus:ring-purple-400/20"
                                 />
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                                    <Mail className="w-4 h-4" />
+                                <label className="text-sm font-medium text-gray-300 flex items-center gap-2">
+                                    <Mail className="w-4 h-4 text-blue-400" />
                                     Email
                                 </label>
                                 <Input
@@ -125,13 +128,13 @@ export default function RegisterPage() {
                                     onChange={handleChange}
                                     required
                                     placeholder="nama@example.com"
-                                    className="h-10"
+                                    className="h-11 bg-white/5 border border-white/20 text-white placeholder:text-gray-500 rounded-lg focus:border-purple-400 focus:ring-purple-400/20"
                                 />
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                                    <Phone className="w-4 h-4" />
+                                <label className="text-sm font-medium text-gray-300 flex items-center gap-2">
+                                    <Phone className="w-4 h-4 text-cyan-400" />
                                     Nomor Telepon
                                 </label>
                                 <Input
@@ -140,13 +143,13 @@ export default function RegisterPage() {
                                     value={formData.phone}
                                     onChange={handleChange}
                                     placeholder="+62812345678"
-                                    className="h-10"
+                                    className="h-11 bg-white/5 border border-white/20 text-white placeholder:text-gray-500 rounded-lg focus:border-purple-400 focus:ring-purple-400/20"
                                 />
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                                    <Lock className="w-4 h-4" />
+                                <label className="text-sm font-medium text-gray-300 flex items-center gap-2">
+                                    <Lock className="w-4 h-4 text-orange-400" />
                                     Password
                                 </label>
                                 <Input
@@ -156,43 +159,43 @@ export default function RegisterPage() {
                                     onChange={handleChange}
                                     required
                                     placeholder="••••••••"
-                                    className="h-10"
+                                    className="h-11 bg-white/5 border border-white/20 text-white placeholder:text-gray-500 rounded-lg focus:border-purple-400 focus:ring-purple-400/20"
                                 />
-                                <p className="text-xs text-gray-600">
+                                <p className="text-xs text-gray-400">
                                     Minimal 8 karakter untuk keamanan
                                 </p>
                             </div>
 
-                            <Button
+                            <button
                                 type="submit"
                                 disabled={isLoading}
-                                className="w-full h-10 bg-blue-600 hover:bg-blue-700 text-white"
+                                className="w-full h-11 bg-linear-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 text-white font-semibold rounded-lg transition-all duration-300 flex items-center justify-center gap-2 mt-6"
                             >
                                 {isLoading ? (
                                     <>
-                                        <span className="inline-block animate-spin mr-2 h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
+                                        <span className="inline-block animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
                                         Memproses...
                                     </>
                                 ) : (
                                     <>
-                                        <UserPlus className="w-4 h-4 mr-2" />
+                                        <User className="w-4 h-4" />
                                         Daftar
                                     </>
                                 )}
-                            </Button>
+                            </button>
                         </form>
 
-                        <div className="text-center text-sm">
-                            <span className="text-gray-600">Sudah punya akun? </span>
-                            <Link href="/auth/login" className="text-blue-600 hover:text-blue-700 font-semibold">
+                        <div className="text-center text-sm mt-6 pt-6 border-t border-white/10">
+                            <span className="text-gray-400">Sudah punya akun? </span>
+                            <Link href="/auth/login" className="text-pink-400 hover:text-pink-300 font-semibold transition-colors">
                                 Masuk di sini
                             </Link>
                         </div>
-                    </CardContent>
-                </Card>
+                    </div>
+                </div>
 
                 {/* Footer Info */}
-                <p className="text-center text-xs text-gray-600">
+                <p className="text-center text-xs text-gray-500">
                     Data Anda dilindungi dengan enkripsi tingkat enterprise
                 </p>
             </div>
