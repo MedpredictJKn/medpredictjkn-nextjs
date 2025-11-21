@@ -11,9 +11,15 @@ export const prisma =
         : ["error"],
   });
 
+// Configure connection pool settings
 if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;
 }
+
+// Add connection error handling
+prisma.$on("error", (e) => {
+  console.error("[Prisma Error]", e);
+});
 
 // Disconnect on process exit
 if (typeof global !== "undefined") {

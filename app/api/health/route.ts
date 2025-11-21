@@ -43,12 +43,36 @@ export async function POST(request: NextRequest) {
 
     try {
       // Create health data dengan timeout
-      const healthData = await Promise.race([
-        createHealthData(decoded.userId, body),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error("Database operation timeout")), 15000)
-        ),
-      ]);
+      let healthData: Awaited<ReturnType<typeof createHealthData>> | undefined;
+      let retries = 0;
+      const maxRetries = 2;
+
+      // Retry logic for connection issues
+      while (retries <= maxRetries) {
+        try {
+          healthData = await Promise.race([
+            createHealthData(decoded.userId, body),
+            new Promise<never>((_, reject) =>
+              setTimeout(() => reject(new Error("Database operation timeout")), 15000)
+            ),
+          ]);
+          break; // Success, exit retry loop
+        } catch (error) {
+          retries++;
+          if (retries > maxRetries) {
+            throw error; // Max retries exceeded
+          }
+          console.warn(`[Health API] Retry ${retries}/${maxRetries}`, error);
+          // Wait before retry (exponential backoff)
+          await new Promise((resolve) =>
+            setTimeout(resolve, Math.pow(2, retries) * 1000)
+          );
+        }
+      }
+
+      if (!healthData) {
+        throw new Error("Failed to create health data");
+      }
 
       // Get user info untuk WA notification
       const user = await prisma.user.findUnique({
@@ -95,12 +119,29 @@ export async function POST(request: NextRequest) {
       console.error("[DB Error]", dbError);
 
       // Handle specific Prisma errors
+      const errorString = String(dbError);
       if ((dbError as Record<string, string>).code === "P2024") {
         return NextResponse.json(
           {
             success: false,
             message: "Database sedang busy. Silakan coba lagi dalam beberapa detik.",
             error: "Connection pool timeout",
+          } as ApiResponse<null>,
+          { status: 503 }
+        );
+      }
+
+      // Check for connection errors
+      if (
+        errorString.includes("ConnectionReset") ||
+        errorString.includes("connection") ||
+        errorString.includes("timeout")
+      ) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Database connection error. Please try again.",
+            error: "Connection issue",
           } as ApiResponse<null>,
           { status: 503 }
         );
@@ -141,12 +182,32 @@ export async function GET(request: NextRequest) {
     }
 
     try {
-      const latest = await Promise.race([
-        getLatestHealth(decoded.userId),
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("Query timeout")), 10000)
-        ),
-      ]);
+      let latest;
+      let retries = 0;
+      const maxRetries = 2;
+
+      // Retry logic for connection issues
+      while (retries <= maxRetries) {
+        try {
+          latest = await Promise.race([
+            getLatestHealth(decoded.userId),
+            new Promise((_, reject) =>
+              setTimeout(() => reject(new Error("Query timeout")), 10000)
+            ),
+          ]);
+          break; // Success, exit retry loop
+        } catch (error) {
+          retries++;
+          if (retries > maxRetries) {
+            throw error; // Max retries exceeded
+          }
+          console.warn(`[Health API] Retry ${retries}/${maxRetries}`, error);
+          // Wait before retry (exponential backoff)
+          await new Promise((resolve) =>
+            setTimeout(resolve, Math.pow(2, retries) * 1000)
+          );
+        }
+      }
 
       // Return null atau latest jika ada
       return NextResponse.json(
@@ -159,6 +220,24 @@ export async function GET(request: NextRequest) {
       );
     } catch (queryError) {
       console.error("[Query Error]", queryError);
+      
+      // Check if it's a connection error
+      const errorMessage = String(queryError);
+      if (
+        errorMessage.includes("ConnectionReset") ||
+        errorMessage.includes("connection") ||
+        errorMessage.includes("timeout")
+      ) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Database connection error. Please try again.",
+            error: "Connection issue",
+          } as ApiResponse<null>,
+          { status: 503 } // Service Unavailable
+        );
+      }
+
       return NextResponse.json(
         {
           success: false,
