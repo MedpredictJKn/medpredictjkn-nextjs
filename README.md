@@ -906,13 +906,6 @@ npm run test
 npm run test:coverage
 ```
 
-## 📖 Documentation
-
-- [Security Guide](./SECURITY.md)
-- [API Documentation](./docs/API.md) - _Coming soon_
-- [ML Model Details](./docs/ML_MODEL.md) - _Coming soon_
-- [Deployment Guide](./docs/DEPLOYMENT.md) - _Coming soon_
-
 ## 🤝 Contributing
 
 Kontribusi sangat diterima! Silakan:
