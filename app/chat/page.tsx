@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import { useEffect, useState, useRef } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { ProfileAvatar } from "@/components/ui/profile-avatar";
 import { AlertCircle, Send, MessageCircle, User, Bot, ArrowLeft, Loader, Menu, X, Clock, Plus } from "lucide-react";
@@ -62,7 +62,6 @@ const parseMarkdownBold = (text: string) => {
 
 export default function ChatPage() {
     const router = useRouter();
-    const searchParams = useSearchParams();
     const [user, setUser] = useState<User | null>(() => {
         if (typeof window !== 'undefined') {
             const storedUser = localStorage.getItem("user");
@@ -146,8 +145,11 @@ export default function ChatPage() {
 
     // Effect untuk load chat dari URL parameter
     useEffect(() => {
-        if (chatSessions.length > 0) {
-            const sessionId = searchParams.get("id");
+        // Load chat session from URL if available
+        // This will be called after hydration on the client
+        if (typeof window !== 'undefined' && chatSessions.length > 0) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const sessionId = urlParams.get("id");
             if (sessionId) {
                 const session = chatSessions.find(s => s.sessionId === sessionId);
                 if (session) {
@@ -172,7 +174,7 @@ export default function ChatPage() {
                 }
             }
         }
-    }, [chatSessions, searchParams]);
+    }, [chatSessions]);
 
     const loadChatHistory = async (authToken: string) => {
         try {
