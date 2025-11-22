@@ -68,29 +68,11 @@ interface Toast {
 
 export default function CekKesehatanPage() {
     const router = useRouter();
-    const [_user] = useState<User | null>(() => {
-        if (typeof window !== 'undefined') {
-            const storedUser = localStorage.getItem("user");
-            if (storedUser) {
-                try {
-                    return JSON.parse(storedUser);
-                } catch (err) {
-                    console.error("Error parsing user data:", err);
-                    return null;
-                }
-            }
-        }
-        return null;
-    });
+    const [_user] = useState<User | null>(null);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
-    const [token] = useState(() => {
-        if (typeof window !== 'undefined') {
-            return localStorage.getItem("token") || "";
-        }
-        return "";
-    });
-    const [isCheckingAuth, setIsCheckingAuth] = useState(token ? false : true);
+    const [token, setToken] = useState("");
+    const [isCheckingAuth, setIsCheckingAuth] = useState(true);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [toasts, setToasts] = useState<Toast[]>([]);
 
@@ -375,18 +357,20 @@ export default function CekKesehatanPage() {
     };
 
     useEffect(() => {
-        // Token is already loaded in initial state, so check it here
-        if (!token) {
+        // Load token from localStorage
+        const storedToken = localStorage.getItem("token");
+        if (!storedToken) {
             router.push("/auth/login");
             return;
         }
 
+        setToken(storedToken);
         setIsCheckingAuth(false);
 
         Promise.resolve().then(() => {
-            fetchHealthData(token);
+            fetchHealthData(storedToken);
         });
-    }, [token, router]);
+    }, [router]);
 
     if (isCheckingAuth) {
         return (

@@ -28,20 +28,7 @@ export default function ProfilPage() {
     const router = useRouter();
 
     // Initialize user from localStorage immediately to prevent flickering
-    const [user, setUser] = useState<UserData | null>(() => {
-        if (typeof window !== 'undefined') {
-            const storedUser = localStorage.getItem("user");
-            if (storedUser) {
-                try {
-                    return JSON.parse(storedUser);
-                } catch (err) {
-                    console.error("Error parsing user data:", err);
-                    return null;
-                }
-            }
-        }
-        return null;
-    });
+    const [user, setUser] = useState<UserData | null>(null);
     const [photoPreview, setPhotoPreview] = useState<string>("");
     const [toasts, setToasts] = useState<Toast[]>([]);
 

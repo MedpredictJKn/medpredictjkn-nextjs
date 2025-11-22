@@ -62,30 +62,12 @@ const parseMarkdownBold = (text: string) => {
 
 export default function ChatPage() {
     const router = useRouter();
-    const [user, setUser] = useState<User | null>(() => {
-        if (typeof window !== 'undefined') {
-            const storedUser = localStorage.getItem("user");
-            if (storedUser) {
-                try {
-                    return JSON.parse(storedUser);
-                } catch (err) {
-                    console.error("Error parsing user data:", err);
-                    return null;
-                }
-            }
-        }
-        return null;
-    });
+    const [user, setUser] = useState<User | null>(null);
     const [messages, setMessages] = useState<Message[]>([]);
     const [inputValue, setInputValue] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
-    const [token, setToken] = useState(() => {
-        if (typeof window !== 'undefined') {
-            return localStorage.getItem("token") || "";
-        }
-        return "";
-    });
+    const [token, setToken] = useState("");
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
     const [isLoadingHistory, setIsLoadingHistory] = useState(false);

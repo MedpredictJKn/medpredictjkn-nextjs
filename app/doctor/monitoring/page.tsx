@@ -49,20 +49,7 @@ interface Toast {
 
 export default function DoctorMonitoringPage() {
     const router = useRouter();
-    const [_user, setUser] = useState<User | null>(() => {
-        if (typeof window !== 'undefined') {
-            const storedUser = localStorage.getItem("user");
-            if (storedUser) {
-                try {
-                    return JSON.parse(storedUser);
-                } catch (err) {
-                    console.error("Error parsing user data:", err);
-                    return null;
-                }
-            }
-        }
-        return null;
-    });
+    const [_user, setUser] = useState<User | null>(null);
     const [patients, setPatients] = useState<Patient[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
