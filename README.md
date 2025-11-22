@@ -1,4 +1,4 @@
-# MedpredictJKN - Sistem Prediksi Risiko Penyakit Berbasis AI
+# MedpredictJKn - Sistem Prediksi Risiko Penyakit Berbasis AI
 
 > **Aplikasi kesehatan digital terintegrasi untuk prediksi dini risiko penyakit kronis menggunakan Machine Learning & Gemini AI**
 
@@ -7,30 +7,35 @@ Sistem yang dirancang untuk mengidentifikasi individu dengan risiko tinggi terha
 ## 🎯 Fitur Utama
 
 ### 1. **Prediksi Dini Risiko Penyakit (Early Risk Prediction)**
+
 - Model AI terlatih dengan dataset JKN (riwayat diagnosa, obat, kunjungan, hasil lab)
 - Kalkulasi skor risiko individual untuk penyakit kronis utama
 - Identifikasi peserta berisiko tinggi sebelum gejala parah
 - Integrasi dengan FastAPI untuk inferensi model ML
 
 ### 2. **Sistem Alert & Notifikasi Otomatis**
+
 - Notifikasi real-time via WhatsApp ke peserta JKN
 - Alert ke fasilitas kesehatan (Faskes) ketika skor risiko melebihi ambang batas
 - Mendorong skrining preventif di Faskes terdekat
 - Tracking status notifikasi
 
 ### 3. **Rekomendasi Skrining & Intervensi Spesifik**
+
 - AI merekomendasikan jenis pemeriksaan penunjang yang relevan
 - Saran modifikasi gaya hidup yang dipersonalisasi
 - Konten edukasi kesehatan berbasis risiko
 - Screening recommendations based on disease risk
 
 ### 4. **Chat dengan AI Gemini**
+
 - Konsultasi kesehatan 24/7 dengan AI asisten medis
 - Analisis gejala dan rekomendasi awal
 - Riwayat percakapan tersimpan
 - Support untuk kesehatan mental & umum
 
 ### 5. **Dashboard Monitoring Pasien (Doctor Portal)**
+
 - Tampilan daftar pasien dengan risiko tertinggi
 - Ringkasan riwayat medis JKN
 - Rekomendasi AI untuk tindak lanjut
@@ -38,6 +43,7 @@ Sistem yang dirancang untuk mengidentifikasi individu dengan risiko tinggi terha
 - Statistik monitoring pasien
 
 ### 6. **Health Data Management**
+
 - Cek kesehatan lengkap (BMI, tekanan darah, gula darah, kolesterol)
 - Automatic BMI calculation dan status kategorisasi
 - Riwayat kesehatan dengan timeline visualization
@@ -214,6 +220,7 @@ healthkathon/
 ## 🛠️ Tech Stack
 
 ### Frontend
+
 - **Next.js 16** - React framework with App Router
 - **TypeScript** - Type-safe code
 - **Tailwind CSS** - Utility-first CSS
@@ -221,6 +228,7 @@ healthkathon/
 - **React Hooks** - State management
 
 ### Backend
+
 - **Next.js API Routes** - Serverless functions
 - **Node.js Runtime** - Server-side execution
 - **Prisma ORM** - Database management
@@ -228,12 +236,14 @@ healthkathon/
 - **bcryptjs** - Password hashing
 
 ### AI & External Services
+
 - **Gemini 2.0 Flash API** - Chat AI & analysis
 - **FastAPI** - ML model inference server
 - **WhAPI.cloud** - WhatsApp messaging
 - **Resend** - Email service
 
 ### Database
+
 - **PostgreSQL** - Relational database (Aiven Cloud)
 - **Prisma Migrations** - Schema management
 
@@ -251,23 +261,23 @@ model User {
   age Int?
   gender String? // 'male' | 'female'
   role String @default("patient") // 'patient' | 'doctor'
-  
+
   // Auth verification
   isEmailVerified Boolean
   verificationToken String?
   verificationTokenExpiry DateTime?
-  
+
   // Password reset
   resetToken String?
   resetTokenExpiry DateTime?
   resetCode String?
   resetCodeExpiry DateTime?
-  
+
   // Profile
   profilePhoto String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relations
   healthData HealthData[]
   chatHistory ChatHistory[]
@@ -281,7 +291,7 @@ model HealthData {
   id String @id @default(cuid())
   userId String
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   height Float
   weight Float
   bmi Float
@@ -290,7 +300,7 @@ model HealthData {
   bloodSugar Float?
   cholesterol Float?
   notes String?
-  
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -299,12 +309,12 @@ model ChatHistory {
   id String @id @default(cuid())
   userId String
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   message String
   response String
   source String // 'gemini' | 'fastapi'
   sessionId String?
-  
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -313,15 +323,15 @@ model DiseaseRiskScore {
   id String @id @default(cuid())
   userId String @unique
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   diabetesScore Float
   hypertensionScore Float
   heartDiseaseScore Float
   strokeScore Float
-  
+
   highRiskDiseases String[] // Array of disease names
   lastCalculated DateTime @default(now())
-  
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -330,13 +340,13 @@ model ScreeningRecommendation {
   id String @id @default(cuid())
   userId String
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   recommendationType String // 'blood_glucose', 'ecg', 'lipid_profile', etc
   priority String // 'Urgent' | 'High' | 'Medium' | 'Low'
   rationale String
-  
+
   completed Boolean @default(false)
-  
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -345,12 +355,12 @@ model ChatHistory {
   id String @id @default(cuid())
   userId String
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   message String
   response String
   source String
   sessionId String?
-  
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -360,64 +370,65 @@ model ChatHistory {
 
 ### Authentication
 
-| Method | Endpoint | Deskripsi | Body | Auth |
-|--------|----------|-----------|------|------|
-| POST | `/api/auth/register` | Register user baru | `{name, email, password, phone?}` | ❌ |
-| POST | `/api/auth/login` | Login user | `{email, password}` | ❌ |
-| POST | `/api/auth/logout` | Logout user | - | ✅ |
-| POST | `/api/auth/forgot-password` | Request reset code | `{email}` | ❌ |
-| POST | `/api/auth/verify-reset-code` | Verify reset code | `{email, code}` | ❌ |
-| POST | `/api/auth/reset-password` | Reset password | `{email, code, password}` | ❌ |
+| Method | Endpoint                      | Deskripsi          | Body                              | Auth |
+| ------ | ----------------------------- | ------------------ | --------------------------------- | ---- |
+| POST   | `/api/auth/register`          | Register user baru | `{name, email, password, phone?}` | ❌   |
+| POST   | `/api/auth/login`             | Login user         | `{email, password}`               | ❌   |
+| POST   | `/api/auth/logout`            | Logout user        | -                                 | ✅   |
+| POST   | `/api/auth/forgot-password`   | Request reset code | `{email}`                         | ❌   |
+| POST   | `/api/auth/verify-reset-code` | Verify reset code  | `{email, code}`                   | ❌   |
+| POST   | `/api/auth/reset-password`    | Reset password     | `{email, code, password}`         | ❌   |
 
 ### Health Data
 
-| Method | Endpoint | Deskripsi | Body | Auth |
-|--------|----------|-----------|------|------|
-| POST | `/api/health` | Simpan data kesehatan | `{height, weight, bloodPressure?, bloodSugar?, cholesterol?, notes?}` | ✅ |
-| GET | `/api/health` | Ambil riwayat kesehatan | - | ✅ |
-| POST | `/api/health/analyze` | AI health analysis | `{healthData, bmi}` | ✅ |
+| Method | Endpoint              | Deskripsi               | Body                                                                  | Auth |
+| ------ | --------------------- | ----------------------- | --------------------------------------------------------------------- | ---- |
+| POST   | `/api/health`         | Simpan data kesehatan   | `{height, weight, bloodPressure?, bloodSugar?, cholesterol?, notes?}` | ✅   |
+| GET    | `/api/health`         | Ambil riwayat kesehatan | -                                                                     | ✅   |
+| POST   | `/api/health/analyze` | AI health analysis      | `{healthData, bmi}`                                                   | ✅   |
 
 ### Chatbot
 
-| Method | Endpoint | Deskripsi | Body | Auth |
-|--------|----------|-----------|------|------|
-| POST | `/api/chatbot` | Kirim pesan ke AI | `{message, source: 'gemini'\|'fastapi', sessionId?}` | ✅ |
-| GET | `/api/chatbot` | Ambil riwayat chat | - | ✅ |
-| DELETE | `/api/chatbot` | Hapus chat | `?id=chatId` | ✅ |
+| Method | Endpoint       | Deskripsi          | Body                                                 | Auth |
+| ------ | -------------- | ------------------ | ---------------------------------------------------- | ---- |
+| POST   | `/api/chatbot` | Kirim pesan ke AI  | `{message, source: 'gemini'\|'fastapi', sessionId?}` | ✅   |
+| GET    | `/api/chatbot` | Ambil riwayat chat | -                                                    | ✅   |
+| DELETE | `/api/chatbot` | Hapus chat         | `?id=chatId`                                         | ✅   |
 
 ### Risk Prediction
 
-| Method | Endpoint | Deskripsi | Body | Auth |
-|--------|----------|-----------|------|------|
-| POST | `/api/risk` | Kalkulasi risiko penyakit | `{healthData}` | ✅ |
-| GET | `/api/risk` | Ambil skor risiko | - | ✅ |
-| POST | `/api/risk/recommendations` | Dapatkan rekomendasi | `{healthData, riskScores}` | ✅ |
+| Method | Endpoint                    | Deskripsi                 | Body                       | Auth |
+| ------ | --------------------------- | ------------------------- | -------------------------- | ---- |
+| POST   | `/api/risk`                 | Kalkulasi risiko penyakit | `{healthData}`             | ✅   |
+| GET    | `/api/risk`                 | Ambil skor risiko         | -                          | ✅   |
+| POST   | `/api/risk/recommendations` | Dapatkan rekomendasi      | `{healthData, riskScores}` | ✅   |
 
 ### Doctor Portal
 
-| Method | Endpoint | Deskripsi | Body | Auth |
-|--------|----------|-----------|------|------|
-| GET | `/api/doctor/patients` | Daftar pasien | - | ✅ |
-| POST | `/api/doctor/messages` | Kirim pesan ke pasien | `{patientId, message}` | ✅ |
-| GET | `/api/doctor/messages` | Ambil pesan pasien | - | ✅ |
-| GET | `/api/doctor/messages/count` | Hitung pesan baru | - | ✅ |
+| Method | Endpoint                     | Deskripsi             | Body                   | Auth |
+| ------ | ---------------------------- | --------------------- | ---------------------- | ---- |
+| GET    | `/api/doctor/patients`       | Daftar pasien         | -                      | ✅   |
+| POST   | `/api/doctor/messages`       | Kirim pesan ke pasien | `{patientId, message}` | ✅   |
+| GET    | `/api/doctor/messages`       | Ambil pesan pasien    | -                      | ✅   |
+| GET    | `/api/doctor/messages/count` | Hitung pesan baru     | -                      | ✅   |
 
 ### Dashboard
 
-| Method | Endpoint | Deskripsi | Body | Auth |
-|--------|----------|-----------|------|------|
-| GET | `/api/dashboard/stats` | Statistik dashboard | - | ✅ |
+| Method | Endpoint               | Deskripsi           | Body | Auth |
+| ------ | ---------------------- | ------------------- | ---- | ---- |
+| GET    | `/api/dashboard/stats` | Statistik dashboard | -    | ✅   |
 
 ### Notifications
 
-| Method | Endpoint | Deskripsi | Body | Auth |
-|--------|----------|-----------|------|------|
-| POST | `/api/notify-wa` | Kirim notifikasi WA | `{phoneNumber, message, type}` | ❌ |
-| GET | `/api/notify-wa` | Cek status API | - | ❌ |
+| Method | Endpoint         | Deskripsi           | Body                           | Auth |
+| ------ | ---------------- | ------------------- | ------------------------------ | ---- |
+| POST   | `/api/notify-wa` | Kirim notifikasi WA | `{phoneNumber, message, type}` | ❌   |
+| GET    | `/api/notify-wa` | Cek status API      | -                              | ❌   |
 
 ## 🔒 Authentication & Security
 
 ### JWT Token Structure
+
 ```json
 {
   "userId": "user-id-cuid",
@@ -428,29 +439,32 @@ model ChatHistory {
 ```
 
 ### Protected Routes (Middleware)
+
 ```typescript
 const protectedRoutes = [
   "/dashboard",
   "/cek-kesehatan",
   "/chat",
   "/profil",
-  "/doctor/monitoring"
+  "/doctor/monitoring",
 ];
 
 const authRoutes = [
   "/auth/login",
   "/auth/register",
   "/auth/forgot-password",
-  "/auth/reset-password"
+  "/auth/reset-password",
 ];
 ```
 
 ### Password Security
+
 - Hashed dengan **bcryptjs** (salt rounds: 10)
 - Minimum 8 karakter
 - Tidak disimpan dalam token
 
 ### Cookie Management
+
 - HTTP-only cookies (tidak accessible via JavaScript)
 - Secure flag (HTTPS only)
 - SameSite policy (Strict/Lax)
@@ -458,6 +472,7 @@ const authRoutes = [
 ## 🚀 Setup & Installation
 
 ### Prerequisites
+
 - Node.js 18+
 - npm/pnpm/yarn
 - PostgreSQL 12+ (atau managed service seperti Aiven)
@@ -524,6 +539,7 @@ npm run seed
 ```
 
 Ini akan membuat:
+
 - Doctor account: `dokter@medpredict.com` / `dokter123`
 
 ### Step 5: Run Development Server
@@ -550,6 +566,7 @@ curl -X POST http://localhost:3000/api/auth/register \
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -582,6 +599,7 @@ curl -X POST http://localhost:3000/api/health \
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -613,6 +631,7 @@ curl -X POST http://localhost:3000/api/chatbot \
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -647,6 +666,7 @@ curl -X POST http://localhost:3000/api/risk \
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -669,6 +689,7 @@ curl -X GET http://localhost:3000/api/chatbot \
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -728,7 +749,7 @@ async def predict_risk(data: HealthData):
     """
     # Parse blood pressure
     sys, dias = map(int, data.bloodPressure.split('/'))
-    
+
     # Prepare features
     features = np.array([[
         data.age,
@@ -740,13 +761,13 @@ async def predict_risk(data: HealthData):
         data.bloodSugar,
         data.cholesterol
     ]])
-    
+
     # Scale features
     features_scaled = scaler.transform(features)
-    
+
     # Predict risk scores (0-100)
     risks = model.predict_proba(features_scaled)[0] * 100
-    
+
     return {
         "diabetesScore": float(risks[0]),
         "hypertensionScore": float(risks[1]),
@@ -788,16 +809,12 @@ WHAT_PHONE_NUMBER="6282269283309"
 ```typescript
 import { sendHealthNotification } from "@/lib/services/wa";
 
-await sendHealthNotification(
-  "6281234567890",
-  "John Doe",
-  {
-    bmi: 22.5,
-    status: "normal",
-    height: 170,
-    weight: 65
-  }
-);
+await sendHealthNotification("6281234567890", "John Doe", {
+  bmi: 22.5,
+  status: "normal",
+  height: 170,
+  weight: 65,
+});
 ```
 
 ## 🎨 UI Components
@@ -892,9 +909,9 @@ npm run test:coverage
 ## 📖 Documentation
 
 - [Security Guide](./SECURITY.md)
-- [API Documentation](./docs/API.md) - *Coming soon*
-- [ML Model Details](./docs/ML_MODEL.md) - *Coming soon*
-- [Deployment Guide](./docs/DEPLOYMENT.md) - *Coming soon*
+- [API Documentation](./docs/API.md) - _Coming soon_
+- [ML Model Details](./docs/ML_MODEL.md) - _Coming soon_
+- [Deployment Guide](./docs/DEPLOYMENT.md) - _Coming soon_
 
 ## 🤝 Contributing
 
@@ -945,6 +962,7 @@ MIT License - lihat [LICENSE](LICENSE) untuk detail
 ## ⚠️ Disclaimer
 
 Aplikasi ini adalah untuk tujuan edukasi dan demonstrasi. Untuk penggunaan medis nyata:
+
 - Konsultasi dengan profesional kesehatan berlisensi
 - Jangan mengandalkan sepenuhnya pada AI predictions
 - Selalu lakukan verifikasi medis profesional
@@ -953,4 +971,3 @@ Aplikasi ini adalah untuk tujuan edukasi dan demonstrasi. Untuk penggunaan medis
 ---
 
 **Made with ❤️ by Healthkathon Team**
-
