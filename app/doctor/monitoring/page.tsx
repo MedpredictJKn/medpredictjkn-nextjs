@@ -47,7 +47,20 @@ interface Toast {
 
 export default function DoctorMonitoringPage() {
     const router = useRouter();
-    const [_user, setUser] = useState<User | null>(null);
+    const [_user, setUser] = useState<User | null>(() => {
+        if (typeof window !== 'undefined') {
+            const storedUser = localStorage.getItem("user");
+            if (storedUser) {
+                try {
+                    return JSON.parse(storedUser);
+                } catch (err) {
+                    console.error("Error parsing user data:", err);
+                    return null;
+                }
+            }
+        }
+        return null;
+    });
     const [patients, setPatients] = useState<Patient[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
@@ -210,8 +223,8 @@ export default function DoctorMonitoringPage() {
             `}</style>
 
             {/* Background Effects */}
-            <div className="fixed top-0 left-1/4 w-96 h-96 bg-purple-500/15 rounded-full blur-3xl pointer-events-none z-0"></div>
-            <div className="fixed bottom-0 right-1/4 w-96 h-96 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none z-0"></div>
+            <div className="fixed top-0 left-1/4 w-96 h-96 bg-purple-500/15 rounded-full blur-3xl pointer-events-none z-0 animate-float-1"></div>
+            <div className="fixed bottom-0 right-1/4 w-96 h-96 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none z-0 animate-float-2"></div>
 
             {/* Header */}
             <header className="sticky top-0 z-40 backdrop-blur-xl bg-white/5 border-b border-white/10">

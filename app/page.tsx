@@ -82,8 +82,8 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-900 via-slate-800 to-slate-900 relative">
       {/* Background Effects */}
-      <div className="fixed top-0 left-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none"></div>
-      <div className="fixed bottom-0 right-1/4 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl pointer-events-none"></div>
+      <div className="fixed top-0 left-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none animate-float-1"></div>
+      <div className="fixed bottom-0 right-1/4 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl pointer-events-none animate-float-2"></div>
 
       {/* Header / Navbar */}
       <header className="sticky top-0 z-40 backdrop-blur-xl bg-white/5 border-b border-white/10">

@@ -33,7 +33,20 @@ interface HealthMetric {
 
 export default function DashboardPage() {
     const router = useRouter();
-    const [user, setUser] = useState<User | null>(null);
+    const [user, setUser] = useState<User | null>(() => {
+        if (typeof window !== 'undefined') {
+            const storedUser = localStorage.getItem("user");
+            if (storedUser) {
+                try {
+                    return JSON.parse(storedUser);
+                } catch (err) {
+                    console.error("Error parsing user data:", err);
+                    return null;
+                }
+            }
+        }
+        return null;
+    });
 
     // State Data
     const [patientCount, setPatientCount] = useState(0);
@@ -92,7 +105,6 @@ export default function DashboardPage() {
         try {
             const userData = JSON.parse(storedUser);
             if (isMounted) {
-                // eslint-disable-next-line react-hooks/set-state-in-effect
                 setUser(userData);
 
                 // Fetch dashboard stats for all users
@@ -179,10 +191,20 @@ export default function DashboardPage() {
         };
     }, [router]);
 
-    const handleLogout = () => {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        router.push("/auth/login");
+    const handleLogout = async () => {
+        try {
+            // Call logout API to clear server-side cookie
+            await fetch("/api/auth/logout", {
+                method: "POST",
+            });
+        } catch (error) {
+            console.error("Logout error:", error);
+        } finally {
+            // Clear client-side data
+            localStorage.removeItem("token");
+            localStorage.removeItem("user");
+            router.push("/auth/login");
+        }
     };
 
     const isDoctor = user?.role === "doctor";
@@ -323,10 +345,10 @@ export default function DashboardPage() {
     const services = isDoctor ? doctorServices : patientServices;
 
     return (
-        <div className="min-h-screen bg-linear-to-br from-slate-900 via-slate-800 to-slate-900 flex">
+        <div className="min-h-screen bg-linear-to-br from-slate-900 via-slate-800 to-slate-900 flex" suppressHydrationWarning>
             {/* Background Effects */}
-            <div className="fixed top-0 left-1/4 w-96 h-96 bg-purple-500/15 rounded-full blur-3xl pointer-events-none z-0"></div>
-            <div className="fixed bottom-0 right-1/4 w-96 h-96 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none z-0"></div>
+            <div className="fixed top-0 left-1/4 w-96 h-96 bg-purple-500/15 rounded-full blur-3xl pointer-events-none z-0 animate-float-1"></div>
+            <div className="fixed bottom-0 right-1/4 w-96 h-96 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none z-0 animate-float-2"></div>
 
             {/* Sidebar */}
             <Sidebar
@@ -335,6 +357,7 @@ export default function DashboardPage() {
                 userName={user?.name}
                 userEmail={user?.email}
                 userRole={user?.role}
+                profilePhoto={user?.profilePhoto}
             />
 
             {/* Main Content */}

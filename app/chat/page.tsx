@@ -1,7 +1,7 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { ProfileAvatar } from "@/components/ui/profile-avatar";
 import { AlertCircle, Send, MessageCircle, User, Bot, ArrowLeft, Loader, Menu, X, Clock, Plus } from "lucide-react";
@@ -60,12 +60,31 @@ const parseMarkdownBold = (text: string) => {
 
 export default function ChatPage() {
     const router = useRouter();
-    const [user, setUser] = useState<User | null>(null);
+    const searchParams = useSearchParams();
+    const [user, setUser] = useState<User | null>(() => {
+        if (typeof window !== 'undefined') {
+            const storedUser = localStorage.getItem("user");
+            if (storedUser) {
+                try {
+                    return JSON.parse(storedUser);
+                } catch (err) {
+                    console.error("Error parsing user data:", err);
+                    return null;
+                }
+            }
+        }
+        return null;
+    });
     const [messages, setMessages] = useState<Message[]>([]);
     const [inputValue, setInputValue] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
-    const [token, setToken] = useState("");
+    const [token, setToken] = useState(() => {
+        if (typeof window !== 'undefined') {
+            return localStorage.getItem("token") || "";
+        }
+        return "";
+    });
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
     const [isLoadingHistory, setIsLoadingHistory] = useState(false);
@@ -123,6 +142,36 @@ export default function ChatPage() {
         return () => window.removeEventListener("storage", handleStorageChange);
     }, [router]);
 
+    // Effect untuk load chat dari URL parameter
+    useEffect(() => {
+        if (chatSessions.length > 0) {
+            const sessionId = searchParams.get("id");
+            if (sessionId) {
+                const session = chatSessions.find(s => s.sessionId === sessionId);
+                if (session) {
+                    // Load all chats from session
+                    const messages: Message[] = [];
+                    // Reverse array agar urutan dari lama ke terbaru
+                    const sortedChats = [...session.chats].reverse();
+                    sortedChats.forEach((chat) => {
+                        messages.push({
+                            type: "user",
+                            text: chat.message,
+                            timestamp: new Date(chat.createdAt),
+                        });
+                        messages.push({
+                            type: "bot",
+                            text: chat.response,
+                            timestamp: new Date(chat.createdAt),
+                        });
+                    });
+                    setMessages(messages);
+                    setSelectedChatId(session.sessionId);
+                }
+            }
+        }
+    }, [chatSessions, searchParams]);
+
     const loadChatHistory = async (authToken: string) => {
         try {
             setIsLoadingHistory(true);
@@ -157,7 +206,7 @@ export default function ChatPage() {
                         session.chats.push(chat);
                     });
 
-                    // Urutkan berdasarkan tanggal terbaru
+                    // Urutkan berdasarkan tanggal terbaru ke lama untuk sidebar
                     const sortedSessions = Array.from(sessions.values()).sort(
                         (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
                     );
@@ -175,7 +224,9 @@ export default function ChatPage() {
     const loadSessionChats = (session: ChatSession) => {
         // Load all chats from session
         const messages: Message[] = [];
-        session.chats.forEach((chat) => {
+        // Reverse array agar urutan dari lama ke terbaru
+        const sortedChats = [...session.chats].reverse();
+        sortedChats.forEach((chat) => {
             messages.push({
                 type: "user",
                 text: chat.message,
@@ -189,6 +240,8 @@ export default function ChatPage() {
         });
         setMessages(messages);
         setSelectedChatId(session.sessionId);
+        // Update URL dengan sessionId
+        router.push(`/chat?id=${encodeURIComponent(session.sessionId)}`);
     };
 
     const startNewChat = () => {
@@ -197,6 +250,8 @@ export default function ChatPage() {
         // Create new session ID
         setCurrentSessionId(`session-${Date.now()}`);
         setSidebarOpen(false);
+        // Clear URL
+        router.push("/chat");
     };
 
     const handleSendMessage = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -267,13 +322,13 @@ export default function ChatPage() {
     return (
         <div className="min-h-screen bg-linear-to-br from-slate-900 via-slate-800 to-slate-900 flex relative overflow-hidden">
             {/* Background Effects */}
-            <div className="fixed top-0 left-1/4 w-96 h-96 bg-purple-500/15 rounded-full blur-3xl pointer-events-none z-0"></div>
-            <div className="fixed bottom-0 right-1/4 w-96 h-96 bg-pink-500/15 rounded-full blur-3xl pointer-events-none z-0"></div>
+            <div className="fixed top-0 left-1/4 w-96 h-96 bg-purple-500/15 rounded-full blur-3xl pointer-events-none z-0 animate-float-1"></div>
+            <div className="fixed bottom-0 right-1/4 w-96 h-96 bg-pink-500/15 rounded-full blur-3xl pointer-events-none z-0 animate-float-2"></div>
 
             {/* Sidebar */}
             <aside className={`${sidebarOpen ? "translate-x-0" : "-translate-x-full"} fixed left-0 top-0 h-full w-64 bg-slate-950/95 backdrop-blur border-r border-white/10 z-50 transition-transform duration-300 flex flex-col scrollbar-hide`}>
-                <div className="sticky top-0 p-4 border-b border-white/10 bg-slate-950/95 backdrop-blur">
-                    <div className="flex items-center justify-between mb-4">
+                <div className="sticky top-0 h-[70px] px-4 border-b border-white/10 bg-slate-950/95 backdrop-blur flex flex-col">
+                    <div className="flex items-center justify-between flex-1">
                         <h2 className="text-lg font-bold text-white">Chat History</h2>
                         <button
                             onClick={() => setSidebarOpen(false)}
@@ -282,6 +337,9 @@ export default function ChatPage() {
                             <X className="w-5 h-5 text-gray-400" />
                         </button>
                     </div>
+                </div>
+
+                <div className="px-4 py-3 border-b border-white/10">
                     <button
                         onClick={startNewChat}
                         className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-linear-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-medium transition-all"

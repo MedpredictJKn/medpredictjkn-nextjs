@@ -60,7 +60,7 @@ export function Sidebar({ onLogout, userName, userEmail, userRole, profilePhoto 
     const isActive = (href: string) => pathname === href;
 
     return (
-        <aside className="fixed left-0 top-0 h-screen w-64 bg-linear-to-br from-slate-900 via-slate-800 to-slate-900 border-r border-white/10 flex flex-col backdrop-blur-xl overflow-hidden">
+        <aside className="fixed left-0 top-0 h-screen w-64 bg-linear-to-br from-slate-900 via-slate-800 to-slate-900 border-r border-white/10 flex flex-col backdrop-blur-xl overflow-hidden" suppressHydrationWarning>
             {/* Background Effects */}
             <div className="absolute top-20 left-0 w-80 h-80 bg-purple-500/15 rounded-full blur-3xl pointer-events-none"></div>
             <div className="absolute bottom-20 right-0 w-80 h-80 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none"></div>
@@ -109,34 +109,40 @@ export function Sidebar({ onLogout, userName, userEmail, userRole, profilePhoto 
             </nav>
 
             {/* User Section */}
-            <div className="p-4 space-y-3 border-t border-white/10 relative z-10">
+            <div className="p-4 space-y-3 border-t border-white/10 relative z-10" suppressHydrationWarning>
                 {/* User Info */}
-                {userName && (
-                    <Link href="/profil" className="block px-4 py-4 bg-linear-to-br from-blue-500/20 to-cyan-500/10 rounded-lg hover:from-blue-500/30 hover:to-cyan-500/20 transition-all duration-200 border border-blue-400/30 hover:border-blue-400/50 cursor-pointer group">
-                        <div className="flex items-center gap-3 mb-3">
-                            <ProfileAvatar src={profilePhoto} alt={userName} name={userName} size="md" className="group-hover:shadow-blue-500/50 transition-all" />
-                            <div className="flex-1 min-w-0">
-                                <p className="text-sm font-bold text-white truncate group-hover:text-blue-200 transition-colors">{userName}</p>
-                                {userEmail && (
-                                    <p className="text-xs text-gray-300 truncate group-hover:text-gray-100 transition-colors">{userEmail}</p>
-                                )}
-                            </div>
-                        </div>
-                        <p className="text-xs text-blue-200 font-semibold uppercase tracking-widest flex items-center gap-2">
-                            {userRole === 'doctor' ? (
-                                <>
-                                    <Stethoscope className="w-4 h-4" />
-                                    Dokter
-                                </>
-                            ) : (
-                                <>
-                                    <User className="w-4 h-4" />
-                                    Pasien
-                                </>
-                            )}
-                        </p>
+                <div suppressHydrationWarning>
+                    <Link href={userName ? "/profil" : "/dashboard"} className="block px-4 py-4 bg-linear-to-br from-blue-500/20 to-cyan-500/10 rounded-lg hover:from-blue-500/30 hover:to-cyan-500/20 transition-all duration-200 border border-blue-400/30 hover:border-blue-400/50 cursor-pointer group">
+                        {userName ? (
+                            <>
+                                <div className="flex items-center gap-3 mb-3">
+                                    <ProfileAvatar src={profilePhoto} alt={userName} name={userName} size="md" className="group-hover:shadow-blue-500/50 transition-all" />
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-bold text-white truncate group-hover:text-blue-200 transition-colors">{userName}</p>
+                                        {userEmail && (
+                                            <p className="text-xs text-gray-300 truncate group-hover:text-gray-100 transition-colors">{userEmail}</p>
+                                        )}
+                                    </div>
+                                </div>
+                                <p className="text-xs text-blue-200 font-semibold uppercase tracking-widest flex items-center gap-2">
+                                    {userRole === 'doctor' ? (
+                                        <>
+                                            <Stethoscope className="w-4 h-4" />
+                                            Dokter
+                                        </>
+                                    ) : (
+                                        <>
+                                            <User className="w-4 h-4" />
+                                            Pasien
+                                        </>
+                                    )}
+                                </p>
+                            </>
+                        ) : (
+                            <div className="h-20"></div>
+                        )}
                     </Link>
-                )}
+                </div>
 
                 {/* Logout Button */}
                 <button

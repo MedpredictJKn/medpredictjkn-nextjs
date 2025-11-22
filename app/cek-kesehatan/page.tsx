@@ -66,11 +66,29 @@ interface Toast {
 
 export default function CekKesehatanPage() {
     const router = useRouter();
-    const [_user, setUser] = useState<User | null>(null);
+    const [_user] = useState<User | null>(() => {
+        if (typeof window !== 'undefined') {
+            const storedUser = localStorage.getItem("user");
+            if (storedUser) {
+                try {
+                    return JSON.parse(storedUser);
+                } catch (err) {
+                    console.error("Error parsing user data:", err);
+                    return null;
+                }
+            }
+        }
+        return null;
+    });
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
-    const [token, setToken] = useState("");
-    const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+    const [token] = useState(() => {
+        if (typeof window !== 'undefined') {
+            return localStorage.getItem("token") || "";
+        }
+        return "";
+    });
+    const [isCheckingAuth, setIsCheckingAuth] = useState(token ? false : true);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [toasts, setToasts] = useState<Toast[]>([]);
 
@@ -355,30 +373,18 @@ export default function CekKesehatanPage() {
     };
 
     useEffect(() => {
-        const storedToken = localStorage.getItem("token");
-        const storedUser = localStorage.getItem("user");
-        if (!storedToken) {
+        // Token is already loaded in initial state, so check it here
+        if (!token) {
             router.push("/auth/login");
             return;
         }
 
-        let userData: User | null = null;
-        if (storedUser) {
-            try {
-                userData = JSON.parse(storedUser);
-            } catch {
-                userData = null;
-            }
-        }
-
-        setUser(userData);
-        setToken(storedToken);
         setIsCheckingAuth(false);
 
         Promise.resolve().then(() => {
-            fetchHealthData(storedToken);
+            fetchHealthData(token);
         });
-    }, [router]);
+    }, [token, router]);
 
     if (isCheckingAuth) {
         return (
@@ -393,8 +399,8 @@ export default function CekKesehatanPage() {
     return (
         <div className="min-h-screen bg-linear-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
             {/* Background Effects */}
-            <div className="fixed top-0 left-1/4 w-96 h-96 bg-purple-500/15 rounded-full blur-3xl pointer-events-none z-0" />
-            <div className="fixed bottom-0 right-1/4 w-96 h-96 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none z-0" />
+            <div className="fixed top-0 left-1/4 w-96 h-96 bg-purple-500/15 rounded-full blur-3xl pointer-events-none z-0 animate-float-1" />
+            <div className="fixed bottom-0 right-1/4 w-96 h-96 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none z-0 animate-float-2" />
 
             {/* Header */}
             <header className="sticky top-0 z-40 backdrop-blur-xl bg-white/5 border-b border-white/10">

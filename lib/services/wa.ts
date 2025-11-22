@@ -126,3 +126,102 @@ Tetap jaga kesehatan! 💪`;
     message,
   });
 }
+
+// Interface untuk analisis kesehatan lengkap
+interface Recommendation {
+  type: string;
+  description: string;
+  priority: string;
+  reason: string;
+  estimatedCost?: string;
+  location?: string;
+}
+
+interface LifestyleTip {
+  category: string;
+  tips: string[];
+}
+
+interface AnalysisResult {
+  bmi: number;
+  status: string;
+  height: number;
+  weight: number;
+  riskLevel: string;
+  screeningRecommendations: Recommendation[];
+  lifestyleRecommendations: LifestyleTip[];
+}
+
+// Fungsi untuk mengirim notifikasi analisis lengkap dari aiAnalyzer
+export async function sendAnalysisNotification(
+  phoneNumber: string,
+  userName: string,
+  analysis: AnalysisResult
+): Promise<{ success: boolean; error?: string }> {
+  // Bagian 1: Data BMI dan Status Kesehatan
+  let message = `🏥 *HASIL ANALISIS KESEHATAN ANDA* 🏥
+
+Halo ${userName}! Berikut hasil cek kesehatan Anda:
+
+📊 *DATA KESEHATAN*
+├─ BMI: ${analysis.bmi.toFixed(1)}
+├─ Tinggi: ${analysis.height} cm
+├─ Berat: ${analysis.weight} kg
+└─ Status: ${analysis.status.toUpperCase()}
+
+⚠️ *LEVEL RISIKO*: ${analysis.riskLevel}
+
+`;
+
+  // Bagian 2: Rekomendasi Skrining Kesehatan
+  if (analysis.screeningRecommendations && analysis.screeningRecommendations.length > 0) {
+    message += `\n💉 *REKOMENDASI SKRINING KESEHATAN*\n`;
+    
+    analysis.screeningRecommendations.forEach((rec, index) => {
+      message += `\n${index + 1}. ${rec.type}
+   Prioritas: ${rec.priority}
+   📝 ${rec.description}
+   
+   🔍 Alasan: ${rec.reason}`;
+      
+      if (rec.estimatedCost) {
+        message += `\n   💰 Estimasi Biaya: ${rec.estimatedCost}`;
+      }
+      if (rec.location) {
+        message += `\n   📍 Lokasi: ${rec.location}`;
+      }
+    });
+  }
+
+  // Bagian 3: Rekomendasi Gaya Hidup Personalisasi
+  if (analysis.lifestyleRecommendations && analysis.lifestyleRecommendations.length > 0) {
+    message += `\n\n💪 *REKOMENDASI GAYA HIDUP PERSONALISASI*\n`;
+    
+    analysis.lifestyleRecommendations.forEach((category, index) => {
+      message += `\n${index + 1}. *${category.category}*`;
+      category.tips.forEach((tip) => {
+        message += `\n   • ${tip}`;
+      });
+    });
+  }
+
+  // Bagian 4: Penutup
+  message += `\n\n---
+
+💡 *LANGKAH SELANJUTNYA*:
+1. Konsultasikan hasil ini dengan dokter
+2. Lakukan pemeriksaan yang direkomendasikan
+3. Terapkan gaya hidup sehat sesuai rekomendasi
+4. Monitor kesehatan Anda secara berkala
+
+Tetap jaga kesehatan! 🏃‍♂️💚
+
+---
+Pesan ini dikirim dari sistem Medpredict JKN
+Untuk informasi lebih lanjut, kunjungi aplikasi kesehatan Anda.`;
+
+  return sendWhatsAppNotification({
+    phoneNumber,
+    message,
+  });
+}
