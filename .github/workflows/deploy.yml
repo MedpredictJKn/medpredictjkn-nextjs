@@ -21,11 +21,6 @@ jobs:
 
       - name: Build
         run: npm run build
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          GEMINI_API_URL: ${{ secrets.GEMINI_API_URL }}
 
       - name: Deploy to Vercel
         run: npx vercel deploy --prod --token=${{ secrets.VERCEL_TOKEN }}
