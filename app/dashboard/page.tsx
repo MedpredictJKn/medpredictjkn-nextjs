@@ -33,6 +33,8 @@ interface HealthMetric {
 export default function DashboardPage() {
     const router = useRouter();
     const [user, setUser] = useState<User | null>(null);
+    const [patientCount, setPatientCount] = useState(0);
+    const [activeMonitoring, setActiveMonitoring] = useState(0);
 
     useEffect(() => {
         let isMounted = true;
@@ -47,6 +49,34 @@ export default function DashboardPage() {
             if (isMounted) {
                 // eslint-disable-next-line react-hooks/set-state-in-effect
                 setUser(userData);
+
+                // Fetch doctor's patients if user is a doctor
+                if (userData.role === "doctor") {
+                    const fetchDoctorStats = async () => {
+                        try {
+                            const token = localStorage.getItem("token");
+                            const response = await fetch("/api/doctor/patients", {
+                                headers: {
+                                    "Authorization": `Bearer ${token}`,
+                                },
+                            });
+
+                            if (response.ok) {
+                                const data = await response.json();
+                                if (isMounted && data.data) {
+                                    setPatientCount(data.data.length);
+                                    // Count patients with health data
+                                    const withHealthData = data.data.filter((p: {latestHealth: Record<string, unknown> | null}) => p.latestHealth).length;
+                                    setActiveMonitoring(withHealthData);
+                                }
+                            }
+                        } catch (err) {
+                            console.error("Error fetching doctor stats:", err);
+                        }
+                    };
+
+                    fetchDoctorStats();
+                }
             }
         } catch (err) {
             console.error("Error parsing user data:", err);
@@ -87,17 +117,17 @@ export default function DashboardPage() {
         },
     ];
 
-    // Doctor quick stats
+    // Doctor quick stats (dynamic based on fetched data)
     const doctorQuickStats = [
         {
             label: "Total Pasien",
-            value: "24",
+            value: String(patientCount),
             icon: Users,
             color: "bg-green-500",
         },
         {
             label: "Monitoring Aktif",
-            value: "8",
+            value: String(activeMonitoring),
             icon: AlertCircle,
             color: "bg-orange-500",
         },
