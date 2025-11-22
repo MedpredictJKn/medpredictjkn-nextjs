@@ -49,7 +49,7 @@ export default function RegisterPage() {
             // Show success message
             setRegistered(true);
             setRegisteredEmail(formData.email);
-            
+
             // Redirect ke login setelah 5 detik
             setTimeout(() => {
                 router.push("/auth/login");
@@ -149,101 +149,101 @@ export default function RegisterPage() {
                                         )}
 
                                         <form onSubmit={handleSubmit} className="space-y-4">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-medium text-gray-300 flex items-center gap-2">
-                                                <User className="w-4 h-4 text-green-400" />
-                                                Nama Lengkap
-                                            </label>
-                                            <Input
-                                                type="text"
-                                                name="name"
-                                                value={formData.name}
-                                                onChange={handleChange}
-                                                required
-                                                placeholder="Reyhan Capri Moraga"
-                                                className="h-11 bg-white/5 border border-white/20 text-white placeholder:text-gray-500 rounded-lg focus:border-purple-400 focus:ring-purple-400/20"
-                                            />
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div className="space-y-2">
+                                                    <label className="text-sm font-medium text-gray-300 flex items-center gap-2">
+                                                        <User className="w-4 h-4 text-green-400" />
+                                                        Nama Lengkap
+                                                    </label>
+                                                    <Input
+                                                        type="text"
+                                                        name="name"
+                                                        value={formData.name}
+                                                        onChange={handleChange}
+                                                        required
+                                                        placeholder="Reyhan Capri Moraga"
+                                                        className="h-11 bg-white/5 border border-white/20 text-white placeholder:text-gray-500 rounded-lg focus:border-purple-400 focus:ring-purple-400/20"
+                                                    />
+                                                </div>
+
+                                                <div className="space-y-2">
+                                                    <label className="text-sm font-medium text-gray-300 flex items-center gap-2">
+                                                        <Mail className="w-4 h-4 text-blue-400" />
+                                                        Email
+                                                    </label>
+                                                    <Input
+                                                        type="email"
+                                                        name="email"
+                                                        value={formData.email}
+                                                        onChange={handleChange}
+                                                        required
+                                                        placeholder="nama@example.com"
+                                                        className="h-11 bg-white/5 border border-white/20 text-white placeholder:text-gray-500 rounded-lg focus:border-purple-400 focus:ring-purple-400/20"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div className="space-y-2">
+                                                    <label className="text-sm font-medium text-gray-300 flex items-center gap-2">
+                                                        <Phone className="w-4 h-4 text-cyan-400" />
+                                                        Nomor Telepon
+                                                    </label>
+                                                    <Input
+                                                        type="tel"
+                                                        name="phone"
+                                                        value={formData.phone}
+                                                        onChange={handleChange}
+                                                        placeholder="+62 8123 45678"
+                                                        className="h-11 bg-white/5 border border-white/20 text-white placeholder:text-gray-500 rounded-lg focus:border-purple-400 focus:ring-purple-400/20"
+                                                    />
+                                                </div>
+
+                                                <div className="space-y-2">
+                                                    <label className="text-sm font-medium text-gray-300 flex items-center gap-2">
+                                                        <Lock className="w-4 h-4 text-orange-400" />
+                                                        Password
+                                                    </label>
+                                                    <Input
+                                                        type="password"
+                                                        name="password"
+                                                        value={formData.password}
+                                                        onChange={handleChange}
+                                                        required
+                                                        placeholder="••••••••"
+                                                        className="h-11 bg-white/5 border border-white/20 text-white placeholder:text-gray-500 rounded-lg focus:border-purple-400 focus:ring-purple-400/20"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <button
+                                                type="submit"
+                                                disabled={isLoading}
+                                                className="w-full h-11 bg-linear-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 text-white font-semibold rounded-lg transition-all duration-200 flex items-center justify-center gap-2 mt-6"
+                                            >
+                                                {isLoading ? (
+                                                    <>
+                                                        <span className="inline-block animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
+                                                        Memproses...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <User className="w-4 h-4" />
+                                                        Daftar
+                                                    </>
+                                                )}
+                                            </button>
+                                        </form>
+
+                                        <div className="text-center text-sm mt-6 pt-6 border-t border-white/10">
+                                            <span className="text-gray-400">Sudah punya akun? </span>
+                                            <Link
+                                                href="/auth/login"
+                                                className="text-pink-400 hover:text-pink-300 font-semibold transition-colors"
+                                            >
+                                                Masuk di sini
+                                            </Link>
                                         </div>
-
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-medium text-gray-300 flex items-center gap-2">
-                                                <Mail className="w-4 h-4 text-blue-400" />
-                                                Email
-                                            </label>
-                                            <Input
-                                                type="email"
-                                                name="email"
-                                                value={formData.email}
-                                                onChange={handleChange}
-                                                required
-                                                placeholder="nama@example.com"
-                                                className="h-11 bg-white/5 border border-white/20 text-white placeholder:text-gray-500 rounded-lg focus:border-purple-400 focus:ring-purple-400/20"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-medium text-gray-300 flex items-center gap-2">
-                                                <Phone className="w-4 h-4 text-cyan-400" />
-                                                Nomor Telepon
-                                            </label>
-                                            <Input
-                                                type="tel"
-                                                name="phone"
-                                                value={formData.phone}
-                                                onChange={handleChange}
-                                                placeholder="+62 8123 45678"
-                                                className="h-11 bg-white/5 border border-white/20 text-white placeholder:text-gray-500 rounded-lg focus:border-purple-400 focus:ring-purple-400/20"
-                                            />
-                                        </div>
-
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-medium text-gray-300 flex items-center gap-2">
-                                                <Lock className="w-4 h-4 text-orange-400" />
-                                                Password
-                                            </label>
-                                            <Input
-                                                type="password"
-                                                name="password"
-                                                value={formData.password}
-                                                onChange={handleChange}
-                                                required
-                                                placeholder="••••••••"
-                                                className="h-11 bg-white/5 border border-white/20 text-white placeholder:text-gray-500 rounded-lg focus:border-purple-400 focus:ring-purple-400/20"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <button
-                                        type="submit"
-                                        disabled={isLoading}
-                                        className="w-full h-11 bg-linear-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 text-white font-semibold rounded-lg transition-all duration-200 flex items-center justify-center gap-2 mt-6"
-                                    >
-                                        {isLoading ? (
-                                            <>
-                                                <span className="inline-block animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
-                                                Memproses...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <User className="w-4 h-4" />
-                                                Daftar
-                                            </>
-                                        )}
-                                    </button>
-                                </form>
-
-                                <div className="text-center text-sm mt-6 pt-6 border-t border-white/10">
-                                    <span className="text-gray-400">Sudah punya akun? </span>
-                                    <Link
-                                        href="/auth/login"
-                                        className="text-pink-400 hover:text-pink-300 font-semibold transition-colors"
-                                    >
-                                        Masuk di sini
-                                    </Link>
-                                </div>
                                     </>
                                 )}
                             </div>
