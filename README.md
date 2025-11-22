@@ -1,6 +1,6 @@
 # MedpredictJKn - Sistem Prediksi Risiko Penyakit Berbasis AI
 
-> **Aplikasi kesehatan digital terintegrasi untuk prediksi dini risiko penyakit kronis menggunakan Machine Learning & Gemini AI**
+> **Aplikasi kesehatan digital terintegrasi untuk prediksi dini risiko penyakit kronis menggunakan Machine Learning**
 
 Sistem yang dirancang untuk mengidentifikasi individu dengan risiko tinggi terhadap penyakit kronis (Diabetes Melitus, Hipertensi, Penyakit Jantung Koroner) sebelum gejala parah muncul, memungkinkan intervensi preventif lebih awal melalui data JKN dan AI analysis.
 
@@ -27,7 +27,7 @@ Sistem yang dirancang untuk mengidentifikasi individu dengan risiko tinggi terha
 - Konten edukasi kesehatan berbasis risiko
 - Screening recommendations based on disease risk
 
-### 4. **Chat dengan AI Gemini**
+### 4. **Chat dengan AI **
 
 - Konsultasi kesehatan 24/7 dengan AI asisten medis
 - Analisis gejala dan rekomendasi awal
