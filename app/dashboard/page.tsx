@@ -15,6 +15,8 @@ import {
     ArrowRight,
 } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+
 interface User {
     id: string;
     name: string;

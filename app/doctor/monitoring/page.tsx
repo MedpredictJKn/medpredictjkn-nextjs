@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { ProfileAvatar } from "@/components/ui/profile-avatar";
 import { AlertCircle, Send, Loader, ArrowLeft, Users } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+
 interface User {
     id: string;
     name: string;

@@ -7,6 +7,8 @@ import { Sidebar } from "@/components/ui/sidebar";
 import { ProfileAvatar } from "@/components/ui/profile-avatar";
 import { Camera, Mail, Phone } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+
 interface UserData {
     id: string;
     name: string;

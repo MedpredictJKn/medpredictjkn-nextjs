@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { AlertCircle, CheckCircle, Activity, Pill, ArrowLeft, TrendingUp, Heart, Award, Stethoscope, Loader } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+
 interface User {
     id: string;
     name: string;
