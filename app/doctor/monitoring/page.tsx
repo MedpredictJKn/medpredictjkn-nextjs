@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { ProfileAvatar } from "@/components/ui/profile-avatar";
 import { AlertCircle, Send, Loader, ArrowLeft, Users } from "lucide-react";
 
 interface User {
@@ -33,8 +34,15 @@ interface Patient {
     phone: string | null;
     age: number | null;
     gender: string | null;
+    profilePhoto?: string;
     latestHealth: HealthData | null;
     healthHistory: HealthData[];
+}
+
+interface Toast {
+    id: string;
+    message: string;
+    type: 'success' | 'error';
 }
 
 export default function DoctorMonitoringPage() {
@@ -46,7 +54,7 @@ export default function DoctorMonitoringPage() {
     const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
     const [message, setMessage] = useState("");
     const [sendingMessage, setSendingMessage] = useState(false);
-    const [sendViaWA, setSendViaWA] = useState(false);
+    const [toasts, setToasts] = useState<Toast[]>([]);
 
     useEffect(() => {
         let isMounted = true;
@@ -125,7 +133,6 @@ export default function DoctorMonitoringPage() {
                 body: JSON.stringify({
                     patientId: selectedPatient.id,
                     message: message.trim(),
-                    sendViaWA: sendViaWA,
                 }),
             });
 
@@ -136,11 +143,19 @@ export default function DoctorMonitoringPage() {
             const data = await response.json();
             if (data.success) {
                 setMessage("");
-                alert(data.message);
+                const toastId = Date.now().toString();
+                setToasts(prev => [...prev, { id: toastId, message: data.message, type: 'success' }]);
+                setTimeout(() => {
+                    setToasts(prev => prev.filter(t => t.id !== toastId));
+                }, 3000);
             }
         } catch (err) {
             console.error("Error sending message:", err);
-            alert("Gagal mengirim pesan");
+            const toastId = Date.now().toString();
+            setToasts(prev => [...prev, { id: toastId, message: "Gagal mengirim pesan", type: 'error' }]);
+            setTimeout(() => {
+                setToasts(prev => prev.filter(t => t.id !== toastId));
+            }, 3000);
         } finally {
             setSendingMessage(false);
         }
@@ -178,6 +193,22 @@ export default function DoctorMonitoringPage() {
 
     return (
         <div className="min-h-screen bg-linear-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col relative overflow-hidden">
+            <style>{`
+                .patient-list-scroll::-webkit-scrollbar {
+                    width: 6px;
+                }
+                .patient-list-scroll::-webkit-scrollbar-track {
+                    background: transparent;
+                }
+                .patient-list-scroll::-webkit-scrollbar-thumb {
+                    background-color: rgba(148, 163, 184, 0.4);
+                    border-radius: 3px;
+                }
+                .patient-list-scroll::-webkit-scrollbar-thumb:hover {
+                    background-color: rgba(148, 163, 184, 0.6);
+                }
+            `}</style>
+
             {/* Background Effects */}
             <div className="fixed top-0 left-1/4 w-96 h-96 bg-purple-500/15 rounded-full blur-3xl pointer-events-none z-0"></div>
             <div className="fixed bottom-0 right-1/4 w-96 h-96 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none z-0"></div>
@@ -185,27 +216,55 @@ export default function DoctorMonitoringPage() {
             {/* Header */}
             <header className="sticky top-0 z-40 backdrop-blur-xl bg-white/5 border-b border-white/10">
                 <div className="h-[70px] px-8 flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <button
-                            onClick={() => router.back()}
-                            className="p-2 hover:bg-white/10 rounded-lg transition-all text-gray-400 hover:text-white"
-                        >
-                            <ArrowLeft className="w-5 h-5" />
-                        </button>
-                        <div className="flex items-center gap-3">
-                            <div className="bg-linear-to-r from-green-500 to-cyan-500 p-2 rounded-lg">
-                                <Users className="w-4 h-4 text-white" />
-                            </div>
-                            <div>
-                                <h1 className="text-2xl font-bold bg-linear-to-r from-green-400 to-cyan-400 bg-clip-text text-transparent">
-                                    Monitoring Pasien
-                                </h1>
-                                <p className="text-xs text-gray-400 mt-0.5">Pantau kesehatan pasien Anda</p>
-                            </div>
+                    <div className="flex items-center gap-3">
+                        <div className="bg-linear-to-r from-green-500 to-cyan-500 p-2 rounded-lg">
+                            <Users className="w-4 h-4 text-white" />
+                        </div>
+                        <div>
+                            <h1 className="text-2xl font-bold bg-linear-to-r from-green-400 to-cyan-400 bg-clip-text text-transparent">
+                                Monitoring Pasien
+                            </h1>
+                            <p className="text-xs text-gray-400 mt-0.5">Pantau kesehatan pasien Anda</p>
                         </div>
                     </div>
+                    <button
+                        onClick={() => router.back()}
+                        className="p-2 hover:bg-white/10 rounded-lg transition-all text-gray-400 hover:text-white"
+                    >
+                        <ArrowLeft className="w-5 h-5" />
+                    </button>
                 </div>
             </header>
+
+            {/* Toast Notifications */}
+            <div className="fixed top-0 left-1/2 transform -translate-x-1/2 z-50 mt-4 pointer-events-none">
+                <div className="flex flex-col gap-2">
+                    {toasts.map((toast) => (
+                        <div
+                            key={toast.id}
+                            className={`flex items-center gap-3 px-6 py-3 rounded-lg backdrop-blur-lg border pointer-events-auto transition-all ${toast.type === 'success'
+                                ? 'bg-green-500/20 border-green-500/40 text-green-300'
+                                : 'bg-red-500/20 border-red-500/40 text-red-300'
+                                }`}
+                        >
+                            {toast.type === 'success' ? (
+                                <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center shrink-0">
+                                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                    </svg>
+                                </div>
+                            ) : (
+                                <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center shrink-0">
+                                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                    </svg>
+                                </div>
+                            )}
+                            <span className="text-sm font-medium">{toast.message}</span>
+                        </div>
+                    ))}
+                </div>
+            </div>
 
             {/* Main Content */}
             <div className="flex-1 flex flex-col p-8 relative z-10 overflow-hidden">
@@ -216,14 +275,20 @@ export default function DoctorMonitoringPage() {
                     </div>
                 )}
 
-                <div className="grid grid-cols-3 gap-6">
+                <div className="grid grid-cols-3 gap-6 h-full">
                     {/* Patient List */}
-                    <div className="col-span-1">
-                        <div className="bg-white/5 backdrop-blur-lg border border-white/10 rounded-2xl overflow-hidden">
-                            <div className="p-4 border-b border-white/10">
+                    <div className="col-span-1 overflow-hidden">
+                        <div className="bg-white/5 backdrop-blur-lg border border-white/10 rounded-2xl overflow-hidden flex flex-col h-full">
+                            <div className="sticky top-0 z-20 p-4 border-b border-white/10 bg-white/5 backdrop-blur-lg shrink-0">
                                 <h2 className="text-lg font-bold text-white">Daftar Pasien</h2>
                             </div>
-                            <div className="max-h-[600px] overflow-y-auto">
+                            <div
+                                className="patient-list-scroll flex-1 overflow-y-auto min-h-0"
+                                style={{
+                                    scrollbarWidth: 'thin',
+                                    scrollbarColor: 'rgba(148, 163, 184, 0.4) transparent'
+                                }}
+                            >
                                 {loading ? (
                                     <div className="p-6 flex justify-center">
                                         <Loader className="w-6 h-6 animate-spin text-blue-400" />
@@ -237,17 +302,26 @@ export default function DoctorMonitoringPage() {
                                         <button
                                             key={patient.id}
                                             onClick={() => setSelectedPatient(patient)}
-                                            className={`w-full p-3 border-b border-white/10 hover:bg-white/5 transition ${selectedPatient?.id === patient.id ? "bg-white/10" : ""
+                                            className={`w-full p-4 border-b border-white/10 hover:bg-white/5 transition ${selectedPatient?.id === patient.id ? "bg-white/10" : ""
                                                 }`}
                                         >
-                                            <div className="text-left">
-                                                <p className="text-sm font-medium text-white">{patient.name}</p>
-                                                <p className="text-xs text-gray-400">{patient.email}</p>
-                                                {patient.latestHealth && (
-                                                    <p className="text-xs text-gray-500 mt-1">
-                                                        BMI: {patient.latestHealth.bmi}
-                                                    </p>
-                                                )}
+                                            <div className="text-left flex items-center gap-3">
+                                                <ProfileAvatar
+                                                    src={patient.profilePhoto}
+                                                    alt={patient.name}
+                                                    name={patient.name}
+                                                    size="sm"
+                                                    className="shrink-0"
+                                                />
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-sm font-medium text-white truncate">{patient.name}</p>
+                                                    <p className="text-xs text-gray-400 truncate">{patient.email}</p>
+                                                    {patient.latestHealth && (
+                                                        <p className="text-xs text-gray-500 mt-1">
+                                                            BMI: {patient.latestHealth.bmi}
+                                                        </p>
+                                                    )}
+                                                </div>
                                             </div>
                                         </button>
                                     ))
@@ -263,12 +337,20 @@ export default function DoctorMonitoringPage() {
                                 {/* Patient Info & Health Data */}
                                 <div className="bg-white/5 backdrop-blur-lg border border-white/10 rounded-2xl p-6">
                                     <div className="flex justify-between items-start mb-6">
-                                        <div>
-                                            <h3 className="text-xl font-bold text-white">{selectedPatient.name}</h3>
-                                            <p className="text-sm text-gray-400">{selectedPatient.email}</p>
-                                            {selectedPatient.phone && (
-                                                <p className="text-sm text-gray-400">{selectedPatient.phone}</p>
-                                            )}
+                                        <div className="flex items-center gap-4 flex-1">
+                                            <ProfileAvatar
+                                                src={selectedPatient.profilePhoto}
+                                                alt={selectedPatient.name}
+                                                name={selectedPatient.name}
+                                                size="md"
+                                            />
+                                            <div>
+                                                <h3 className="text-xl font-bold text-white">{selectedPatient.name}</h3>
+                                                <p className="text-sm text-gray-400">{selectedPatient.email}</p>
+                                                {selectedPatient.phone && (
+                                                    <p className="text-sm text-gray-400">{selectedPatient.phone}</p>
+                                                )}
+                                            </div>
                                         </div>
                                         <div className="text-right">
                                             {selectedPatient.gender && (
@@ -419,18 +501,7 @@ export default function DoctorMonitoringPage() {
                                             disabled={sendingMessage}
                                         />
                                         <div className="flex items-center gap-4">
-                                            <label className="flex items-center gap-2 cursor-pointer">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={sendViaWA}
-                                                    onChange={(e) => setSendViaWA(e.target.checked)}
-                                                    className="w-4 h-4 bg-white/10 border border-white/20 rounded cursor-pointer"
-                                                    disabled={sendingMessage}
-                                                />
-                                                <span className="text-sm text-gray-300">
-                                                    Kirim via WhatsApp
-                                                </span>
-                                            </label>
+                                            <p className="text-xs text-gray-400">Pesan akan otomatis dikirim ke WhatsApp pasien</p>
                                             <button
                                                 onClick={handleSendMessage}
                                                 disabled={sendingMessage || !message.trim()}

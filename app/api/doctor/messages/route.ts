@@ -78,8 +78,8 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Send via WhatsApp if requested
-    if (body.sendViaWA && patient.phone) {
+    // Send via WhatsApp automatically if patient has phone
+    if (patient.phone) {
       try {
         const waResponse = await fetch(
           `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/api/notify-wa`,
@@ -87,9 +87,8 @@ export async function POST(request: NextRequest) {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              phoneNumber: patient.phone,
-              message: `[Pesan dari ${doctor.name}]\n\n${body.message}`,
-              messageType: "doctor_message",
+              to: patient.phone,
+              body: `[Pesan dari ${doctor.name}]\n\n${body.message}`,
             }),
           }
         );

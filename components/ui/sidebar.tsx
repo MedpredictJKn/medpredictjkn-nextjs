@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useMemo } from 'react';
 import { Activity, MessageCircle, LogOut, LayoutDashboard, Users, Stethoscope, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ProfileAvatar } from './profile-avatar';
 
 interface SidebarProps {
     onLogout: () => void;
@@ -113,19 +114,7 @@ export function Sidebar({ onLogout, userName, userEmail, userRole, profilePhoto 
                 {userName && (
                     <Link href="/profil" className="block px-4 py-4 bg-linear-to-br from-blue-500/20 to-cyan-500/10 rounded-lg hover:from-blue-500/30 hover:to-cyan-500/20 transition-all duration-200 border border-blue-400/30 hover:border-blue-400/50 cursor-pointer group">
                         <div className="flex items-center gap-3 mb-3">
-                            <div className="w-12 h-12 rounded-full bg-linear-to-br from-blue-500 to-cyan-400 flex items-center justify-center shrink-0 shadow-lg shadow-blue-500/30 group-hover:shadow-blue-500/50 transition-all overflow-hidden">
-                                {profilePhoto ? (
-                                    <Image
-                                        src={profilePhoto}
-                                        alt={userName}
-                                        width={48}
-                                        height={48}
-                                        className="w-full h-full object-cover"
-                                    />
-                                ) : (
-                                    <span className="text-white font-bold text-base">{userName.charAt(0).toUpperCase()}</span>
-                                )}
-                            </div>
+                            <ProfileAvatar src={profilePhoto} alt={userName} name={userName} size="md" className="group-hover:shadow-blue-500/50 transition-all" />
                             <div className="flex-1 min-w-0">
                                 <p className="text-sm font-bold text-white truncate group-hover:text-blue-200 transition-colors">{userName}</p>
                                 {userEmail && (

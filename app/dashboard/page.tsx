@@ -35,11 +35,24 @@ export default function DashboardPage() {
     const [user, setUser] = useState<User | null>(null);
     const [patientCount, setPatientCount] = useState(0);
     const [activeMonitoring, setActiveMonitoring] = useState(0);
+    const [totalPemeriksaan, setTotalPemeriksaan] = useState(0);
+    const [totalChat, setTotalChat] = useState(0);
+    const [alertAktif, setAlertAktif] = useState(0);
+    const [latestHealth, setLatestHealth] = useState<{
+        bloodPressure?: string | null;
+        bmi: number;
+        bloodSugar?: number | null;
+        cholesterol?: number | null;
+        createdAt: Date;
+    } | null>(null);
+    const [wellnessScore, setWellnessScore] = useState(0);
 
     useEffect(() => {
         let isMounted = true;
         const storedUser = localStorage.getItem("user");
-        if (!storedUser) {
+        const storedToken = localStorage.getItem("token");
+        
+        if (!storedUser || !storedToken) {
             router.push("/auth/login");
             return;
         }
@@ -50,14 +63,39 @@ export default function DashboardPage() {
                 // eslint-disable-next-line react-hooks/set-state-in-effect
                 setUser(userData);
 
+                // Fetch dashboard stats for all users
+                const fetchDashboardStats = async () => {
+                    try {
+                        const response = await fetch("/api/dashboard/stats", {
+                            headers: {
+                                "Authorization": `Bearer ${storedToken}`,
+                            },
+                        });
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (isMounted && data.data) {
+                                setTotalPemeriksaan(data.data.totalPemeriksaan);
+                                setTotalChat(data.data.totalChat);
+                                setAlertAktif(data.data.alertAktif);
+                                setLatestHealth(data.data.latestHealth);
+                                setWellnessScore(data.data.wellnessScore);
+                            }
+                        }
+                    } catch (err) {
+                        console.error("Error fetching dashboard stats:", err);
+                    }
+                };
+
+                fetchDashboardStats();
+
                 // Fetch doctor's patients if user is a doctor
                 if (userData.role === "doctor") {
                     const fetchDoctorStats = async () => {
                         try {
-                            const token = localStorage.getItem("token");
                             const response = await fetch("/api/doctor/patients", {
                                 headers: {
-                                    "Authorization": `Bearer ${token}`,
+                                    "Authorization": `Bearer ${storedToken}`,
                                 },
                             });
 
@@ -99,19 +137,19 @@ export default function DashboardPage() {
     const patientQuickStats = [
         {
             label: "Total Pemeriksaan",
-            value: "5",
+            value: String(totalPemeriksaan),
             icon: Activity,
             color: "bg-blue-500",
         },
         {
             label: "Chat AI",
-            value: "12",
+            value: String(totalChat),
             icon: MessageCircle,
             color: "bg-purple-500",
         },
         {
             label: "Alert Aktif",
-            value: "2",
+            value: String(alertAktif),
             icon: AlertCircle,
             color: "bg-orange-500",
         },
@@ -141,11 +179,45 @@ export default function DashboardPage() {
 
     const quickStats = isDoctor ? doctorQuickStats : patientQuickStats;
 
-    const healthMetrics: HealthMetric[] = [
-        { name: "Tekanan Darah", value: "120/80", unit: "mmHg", status: "normal" },
-        { name: "BMI", value: "22.5", unit: "kg/m²", status: "normal" },
-        { name: "Detak Jantung", value: "72", unit: "bpm", status: "normal" },
-        { name: "Kolesterol", value: "180", unit: "mg/dL", status: "warning" },
+    const healthMetrics: HealthMetric[] = latestHealth ? [
+        { 
+            name: "Tekanan Darah", 
+            value: latestHealth.bloodPressure || "N/A", 
+            unit: "mmHg", 
+            status: latestHealth.bloodPressure 
+                ? (() => {
+                    const [systolic] = latestHealth.bloodPressure.split("/").map(Number);
+                    return systolic > 140 || systolic < 90 ? "critical" : systolic > 130 || systolic < 100 ? "warning" : "normal";
+                })()
+                : "normal"
+        },
+        { 
+            name: "BMI", 
+            value: latestHealth.bmi.toFixed(1), 
+            unit: "kg/m²", 
+            status: latestHealth.bmi < 18.5 || latestHealth.bmi > 24.9 ? "warning" : "normal"
+        },
+        { 
+            name: "Gula Darah", 
+            value: latestHealth.bloodSugar?.toString() || "N/A", 
+            unit: "mg/dL", 
+            status: latestHealth.bloodSugar 
+                ? latestHealth.bloodSugar > 200 || latestHealth.bloodSugar < 70 ? "critical" : latestHealth.bloodSugar > 140 || latestHealth.bloodSugar < 100 ? "warning" : "normal"
+                : "normal"
+        },
+        { 
+            name: "Kolesterol", 
+            value: latestHealth.cholesterol?.toString() || "N/A", 
+            unit: "mg/dL", 
+            status: latestHealth.cholesterol 
+                ? latestHealth.cholesterol > 240 ? "critical" : latestHealth.cholesterol > 200 ? "warning" : "normal"
+                : "normal"
+        },
+    ] : [
+        { name: "Tekanan Darah", value: "N/A", unit: "mmHg", status: "normal" },
+        { name: "BMI", value: "N/A", unit: "kg/m²", status: "normal" },
+        { name: "Gula Darah", value: "N/A", unit: "mg/dL", status: "normal" },
+        { name: "Kolesterol", value: "N/A", unit: "mg/dL", status: "normal" },
     ];
 
     // Patient services
@@ -309,11 +381,18 @@ export default function DashboardPage() {
 
                                 <div className="relative z-10 h-full flex flex-col">
                                     <p className="text-gray-400 text-sm font-semibold uppercase tracking-wide mb-3">Wellness Score</p>
-                                    <div className="text-4xl font-bold text-white mb-4">78/100</div>
+                                    <div className="text-4xl font-bold text-white mb-4">{wellnessScore}/100</div>
                                     <div className="h-2 bg-white/10 rounded-full overflow-hidden mb-3">
-                                        <div className="w-3/4 h-full bg-linear-to-rrom-green-500 to-emerald-500" />
+                                        <div 
+                                            className="h-full bg-linear-to-r from-green-500 to-emerald-500" 
+                                            style={{ width: `${wellnessScore}%` }}
+                                        />
                                     </div>
-                                    <p className="text-xs text-green-300 font-semibold mt-auto">Sangat Baik!</p>
+                                    <p className={`text-xs font-semibold mt-auto ${
+                                        wellnessScore >= 80 ? "text-green-300" : wellnessScore >= 60 ? "text-yellow-300" : "text-red-300"
+                                    }`}>
+                                        {wellnessScore >= 80 ? "Sangat Baik!" : wellnessScore >= 60 ? "Baik" : "Perlu Perhatian"}
+                                    </p>
                                 </div>
                             </div>
 

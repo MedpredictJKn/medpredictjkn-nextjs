@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { AlertCircle, CheckCircle, Activity, Pill, ArrowLeft, TrendingUp, Heart } from "lucide-react";
+import { AlertCircle, CheckCircle, Activity, Pill, ArrowLeft, TrendingUp, Heart, Award, Stethoscope, Loader } from "lucide-react";
 
 interface User {
     id: string;
@@ -31,15 +31,50 @@ interface HealthResponse {
     weight: number;
 }
 
+interface RiskPrediction {
+    diabetes: { score: number; level: string; risk: number };
+    hypertension: { score: number; level: string; risk: number };
+    heartDisease: { score: number; level: string; risk: number };
+}
+
+interface Alert {
+    type: string;
+    severity: "low" | "medium" | "high" | "critical";
+    message: string;
+    action?: string;
+}
+
+interface Recommendation {
+    type: string;
+    description: string;
+    priority: string;
+    reason: string;
+    estimatedCost?: string;
+    location?: string;
+}
+
+interface LifestyleTip {
+    category: string;
+    tips: string[];
+}
+
+interface Toast {
+    id: string;
+    message: string;
+    type: 'success' | 'error';
+}
+
 export default function CekKesehatanPage() {
     const router = useRouter();
     const [_user, setUser] = useState<User | null>(null);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
     const [token, setToken] = useState("");
-    const [result, setResult] = useState<HealthResponse | null>(null);
     const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [toasts, setToasts] = useState<Toast[]>([]);
 
+    // Form data - persisten di database
     const [formData, setFormData] = useState<HealthData>({
         height: 0,
         weight: 0,
@@ -48,6 +83,15 @@ export default function CekKesehatanPage() {
         cholesterol: undefined,
         notes: "",
     });
+
+    // Result & Analysis - TEMPORARY ONLY (tidak disimpan, hilang saat refresh)
+    const [result, setResult] = useState<HealthResponse | null>(null);
+    const [_riskPrediction, setRiskPrediction] = useState<RiskPrediction | null>(null);
+    const [_alerts, setAlerts] = useState<Alert[]>([]);
+    const [screeningRecommendations, setScreeningRecommendations] = useState<Recommendation[]>([]);
+    const [lifestyleRecommendations, setLifestyleRecommendations] = useState<LifestyleTip[]>([]);
+    const [_riskLevel, setRiskLevel] = useState<string>("");
+    const [_interventionRequired, setInterventionRequired] = useState(false);
 
     // Fetch existing health data
     const fetchHealthData = async (token: string) => {
@@ -67,7 +111,6 @@ export default function CekKesehatanPage() {
             console.log("[fetchHealthData] Response:", data);
 
             if (data.data) {
-                // Auto-populate form with existing data
                 setFormData({
                     height: data.data.height || 0,
                     weight: data.data.weight || 0,
@@ -77,26 +120,149 @@ export default function CekKesehatanPage() {
                     notes: data.data.notes || "",
                 });
 
-                // Show result if available
-                if (data.data.bmi) {
-                    setResult({
-                        bmi: data.data.bmi,
-                        status: data.data.status,
-                        height: data.data.height,
-                        weight: data.data.weight,
-                    });
-                    console.log("[fetchHealthData] Result loaded:", {
-                        bmi: data.data.bmi,
-                        status: data.data.status,
-                    });
-                } else {
-                    console.log("[fetchHealthData] No BMI data available");
-                }
-            } else {
-                console.log("[fetchHealthData] No health data found");
+                // Note: Do NOT set result here. Results should only display after user clicks "Simpan & Analisis"
+                // Results are temporary and should disappear on page refresh
             }
         } catch (err) {
             console.error("Error fetching health data:", err);
+        }
+    };
+
+    const fetchAIRecommendations = async (bmi: number, healthData: HealthData) => {
+        if (!token) return;
+
+        try {
+            setIsAnalyzing(true);
+            const response = await fetch("/api/health/analyze", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    healthData,
+                    bmi,
+                }),
+            });
+
+            if (!response.ok) {
+                console.error("Analysis API error:", response.status);
+                const toastId = Date.now().toString();
+                setToasts(prev => [...prev, { id: toastId, message: "Gagal menganalisis data kesehatan", type: 'error' }]);
+                setTimeout(() => {
+                    setToasts(prev => prev.filter(t => t.id !== toastId));
+                }, 3000);
+                return;
+            }
+
+            const data = await response.json();
+            console.log("[AI Analysis] Response:", data);
+
+            if (data.success && data.data) {
+                setRiskPrediction(data.data.riskPrediction);
+                setAlerts(data.data.alerts);
+                setScreeningRecommendations(data.data.screeningRecommendations);
+                setLifestyleRecommendations(data.data.lifestyleRecommendations);
+                setRiskLevel(data.data.riskLevel);
+                setInterventionRequired(data.data.interventionRequired);
+
+                // Show success toast ONLY WHEN ANALYSIS COMPLETES
+                const toastId = Date.now().toString();
+                setToasts(prev => [...prev, { id: toastId, message: "Data kesehatan berhasil disimpan dan dianalisis!", type: 'success' }]);
+                setTimeout(() => {
+                    setToasts(prev => prev.filter(t => t.id !== toastId));
+                }, 3000);
+            }
+        } catch (err) {
+            console.error("Error fetching AI analysis:", err);
+            const toastId = Date.now().toString();
+            setToasts(prev => [...prev, { id: toastId, message: "Gagal menganalisis data kesehatan", type: 'error' }]);
+            setTimeout(() => {
+                setToasts(prev => prev.filter(t => t.id !== toastId));
+            }, 3000);
+        } finally {
+            setIsAnalyzing(false);
+        }
+    };
+
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        setError("");
+        setSuccess("");
+
+        if (!formData.height || !formData.weight) {
+            const toastId = Date.now().toString();
+            setToasts(prev => [...prev, { id: toastId, message: "Tinggi dan berat badan harus diisi", type: 'error' }]);
+            setTimeout(() => {
+                setToasts(prev => prev.filter(t => t.id !== toastId));
+            }, 3000);
+            return;
+        }
+
+        if (!token) {
+            const toastId = Date.now().toString();
+            setToasts(prev => [...prev, { id: toastId, message: "Token tidak ditemukan, silahkan login ulang", type: 'error' }]);
+            setTimeout(() => {
+                setToasts(prev => prev.filter(t => t.id !== toastId));
+            }, 3000);
+            return;
+        }
+
+        try {
+            const response = await fetch("/api/health", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify(formData),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                const toastId = Date.now().toString();
+                setToasts(prev => [...prev, { id: toastId, message: data.message || "Gagal menyimpan data kesehatan", type: 'error' }]);
+                setTimeout(() => {
+                    setToasts(prev => prev.filter(t => t.id !== toastId));
+                }, 3000);
+                return;
+            }
+
+            // Update form dengan response dari server
+            setFormData({
+                height: data.data.height,
+                weight: data.data.weight,
+                bloodPressure: data.data.bloodPressure || "",
+                bloodSugar: data.data.bloodSugar || undefined,
+                cholesterol: data.data.cholesterol || undefined,
+                notes: data.data.notes || "",
+            });
+
+            // Set result untuk tampilan temporary
+            setResult({
+                bmi: data.data.bmi,
+                status: data.data.status,
+                height: data.data.height,
+                weight: data.data.weight,
+            });
+
+            // Fetch AI recommendations setelah health data disimpan
+            // Success notification akan ditampilkan setelah analisis selesai
+            await fetchAIRecommendations(data.data.bmi, {
+                height: data.data.height,
+                weight: data.data.weight,
+                bloodPressure: data.data.bloodPressure,
+                bloodSugar: data.data.bloodSugar,
+                cholesterol: data.data.cholesterol,
+                notes: data.data.notes,
+            });
+        } catch (err) {
+            const toastId = Date.now().toString();
+            setToasts(prev => [...prev, { id: toastId, message: String(err) || "Terjadi kesalahan", type: 'error' }]);
+            setTimeout(() => {
+                setToasts(prev => prev.filter(t => t.id !== toastId));
+            }, 3000);
         }
     };
 
@@ -115,63 +281,7 @@ export default function CekKesehatanPage() {
         }));
     };
 
-    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        setError("");
-        setSuccess("");
-
-        if (!formData.height || !formData.weight) {
-            setError("Tinggi dan berat badan harus diisi");
-            return;
-        }
-
-        if (!token) {
-            setError("Token tidak ditemukan, silahkan login ulang");
-            return;
-        }
-
-        try {
-            const response = await fetch("/api/health", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify(formData),
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                setError(data.message || "Gagal menyimpan data kesehatan");
-                return;
-            }
-
-            setSuccess("Data kesehatan berhasil disimpan!");
-
-            // Update form dengan data terbaru dari response (jangan clear)
-            setFormData({
-                height: data.data.height,
-                weight: data.data.weight,
-                bloodPressure: data.data.bloodPressure || "",
-                bloodSugar: data.data.bloodSugar || undefined,
-                cholesterol: data.data.cholesterol || undefined,
-                notes: data.data.notes || "",
-            });
-
-            // Show result
-            setResult({
-                bmi: data.data.bmi,
-                status: data.data.status,
-                height: data.data.height,
-                weight: data.data.weight,
-            });
-        } catch (err) {
-            setError(String(err) || "Terjadi kesalahan");
-        }
-    };
-
-    const getStatusColor = (status: string) => {
+    const _getStatusColor = (status: string) => {
         switch (status) {
             case "normal":
                 return "text-green-400";
@@ -186,7 +296,7 @@ export default function CekKesehatanPage() {
         }
     };
 
-    const getStatusBgGradient = (status: string) => {
+    const _getStatusBgGradient = (status: string) => {
         switch (status) {
             case "normal":
                 return "from-green-500/20 to-emerald-500/20 border-green-500/40";
@@ -201,7 +311,7 @@ export default function CekKesehatanPage() {
         }
     };
 
-    const getStatusText = (status: string) => {
+    const _getStatusText = (status: string) => {
         switch (status) {
             case "normal":
                 return "Berat Badan Normal";
@@ -216,7 +326,34 @@ export default function CekKesehatanPage() {
         }
     };
 
-    // eslint-disable react-hooks/rules-of-hooks
+    const _getAlertBgColor = (_severity: string) => {
+        // Moved to chatbot AI
+        return "";
+    };
+
+    const _getAlertIconColor = (_severity: string) => {
+        // Moved to chatbot AI
+        return "";
+    };
+
+    const _getRiskScoreColor = (_score: number) => {
+        // Moved to chatbot AI
+        return "";
+    };
+
+    const getPriorityColor = (priority: string) => {
+        switch (priority) {
+            case "Urgent":
+                return "bg-red-500/20 text-red-300 border-red-500/30";
+            case "High":
+                return "bg-orange-500/20 text-orange-300 border-orange-500/30";
+            case "Medium":
+                return "bg-yellow-500/20 text-yellow-300 border-yellow-500/30";
+            default:
+                return "bg-blue-500/20 text-blue-300 border-blue-500/30";
+        }
+    };
+
     useEffect(() => {
         const storedToken = localStorage.getItem("token");
         const storedUser = localStorage.getItem("user");
@@ -234,12 +371,10 @@ export default function CekKesehatanPage() {
             }
         }
 
-        // Set all state at once
         setUser(userData);
         setToken(storedToken);
         setIsCheckingAuth(false);
 
-        // Fetch existing health data in a separate microtask to avoid cascading renders
         Promise.resolve().then(() => {
             fetchHealthData(storedToken);
         });
@@ -249,7 +384,7 @@ export default function CekKesehatanPage() {
         return (
             <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-slate-900 via-slate-800 to-slate-900">
                 <div className="text-center space-y-4">
-                    <div className="inline-flex h-12 w-12 animate-spin rounded-full border-4 border-blue-200 border-t-blue-500"></div>
+                    <div className="inline-flex h-12 w-12 animate-spin rounded-full border-4 border-blue-200 border-t-blue-500" />
                 </div>
             </div>
         );
@@ -258,30 +393,63 @@ export default function CekKesehatanPage() {
     return (
         <div className="min-h-screen bg-linear-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
             {/* Background Effects */}
-            <div className="fixed top-0 left-1/4 w-96 h-96 bg-purple-500/15 rounded-full blur-3xl pointer-events-none z-0"></div>
-            <div className="fixed bottom-0 right-1/4 w-96 h-96 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none z-0"></div>
+            <div className="fixed top-0 left-1/4 w-96 h-96 bg-purple-500/15 rounded-full blur-3xl pointer-events-none z-0" />
+            <div className="fixed bottom-0 right-1/4 w-96 h-96 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none z-0" />
 
             {/* Header */}
             <header className="sticky top-0 z-40 backdrop-blur-xl bg-white/5 border-b border-white/10">
                 <div className="h-[70px] px-8 flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <button
-                            onClick={() => router.back()}
-                            className="p-2 hover:bg-white/10 rounded-lg transition-all text-gray-400 hover:text-white"
-                        >
-                            <ArrowLeft className="w-5 h-5" />
-                        </button>
+                    <div className="flex items-center gap-3">
+                        <div className="bg-linear-to-r from-blue-500 to-cyan-500 p-2 rounded-lg">
+                            <Activity className="w-4 h-4 text-white" />
+                        </div>
                         <div>
                             <h1 className="text-2xl font-bold bg-linear-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
-                                Cek Kesehatan
+                                Cek Kesehatan & Analisis Risiko
                             </h1>
                             <p className="text-xs text-gray-400 mt-0.5">
-                                Periksa data kesehatan dan analisis BMI Anda
+                                Periksa data kesehatan dan dapatkan analisis AI mendalam
                             </p>
                         </div>
                     </div>
+                    <button
+                        onClick={() => router.back()}
+                        className="p-2 hover:bg-white/10 rounded-lg transition-all text-gray-400 hover:text-white"
+                    >
+                        <ArrowLeft className="w-5 h-5" />
+                    </button>
                 </div>
             </header>
+
+            {/* Toast Notifications */}
+            <div className="fixed top-0 left-1/2 transform -translate-x-1/2 z-50 mt-4 pointer-events-none">
+                <div className="flex flex-col gap-2">
+                    {toasts.map((toast) => (
+                        <div
+                            key={toast.id}
+                            className={`flex items-center gap-3 px-6 py-3 rounded-lg backdrop-blur-lg border pointer-events-auto transition-all ${toast.type === 'success'
+                                ? 'bg-green-500/20 border-green-500/40 text-green-300'
+                                : 'bg-red-500/20 border-red-500/40 text-red-300'
+                                }`}
+                        >
+                            {toast.type === 'success' ? (
+                                <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center shrink-0">
+                                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                    </svg>
+                                </div>
+                            ) : (
+                                <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center shrink-0">
+                                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                    </svg>
+                                </div>
+                            )}
+                            <span className="text-sm font-medium">{toast.message}</span>
+                        </div>
+                    ))}
+                </div>
+            </div>
 
             {/* Page Content */}
             <div className="p-8 space-y-8 relative z-10">
@@ -316,12 +484,12 @@ export default function CekKesehatanPage() {
 
                             <div className="relative z-10">
                                 <div className="flex items-center gap-3 mb-8">
-                                    <div className="p-3 rounded-lg bg-blue-500/20 border border-blue-500/30">
+                                    <div className="p-6 rounded-lg bg-blue-500/20 border border-blue-500/30">
                                         <Activity className="w-6 h-6 text-blue-400" />
                                     </div>
                                     <div>
                                         <h3 className="text-2xl font-bold text-white">Data Kesehatan Anda</h3>
-                                        <p className="text-sm text-gray-400 mt-0.5">Masukkan data kesehatan terbaru untuk analisis BMI</p>
+                                        <p className="text-sm text-gray-400 mt-0.5">Masukkan data kesehatan terbaru untuk analisis BMI & risiko penyakit</p>
                                     </div>
                                 </div>
 
@@ -380,7 +548,7 @@ export default function CekKesehatanPage() {
                                             <h4 className="text-lg font-bold text-white">Tanda Vital</h4>
                                         </div>
                                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                            <div className="space-y-4 group">
+                                            <div className="space-y-2 group">
                                                 <label className="text-sm font-semibold text-gray-200 flex items-center gap-2">
                                                     <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
                                                     Tekanan Darah (mmHg)
@@ -444,7 +612,7 @@ export default function CekKesehatanPage() {
                                             name="notes"
                                             value={formData.notes || ""}
                                             onChange={handleChange}
-                                            placeholder="Tulis catatan tentang kondisi kesehatan Anda, misalnya: keluhan, aktivitas fisik, pola makan, atau obat-obatan yang sedang dikonsumsi..."
+                                            placeholder="Tulis catatan tentang kondisi kesehatan Anda..."
                                             className="bg-white/10 border border-white/20 text-white placeholder-gray-500 rounded-xl focus:border-purple-400 focus:ring-purple-400/20 transition-all resize-none"
                                             rows={4}
                                         />
@@ -454,10 +622,11 @@ export default function CekKesehatanPage() {
                                     <div className="flex gap-3 pt-4 border-t border-white/10">
                                         <Button
                                             type="submit"
-                                            className="flex-1 bg-linear-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-semibold py-3 rounded-xl transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/50 flex items-center justify-center gap-2 group"
+                                            disabled={isAnalyzing}
+                                            className="flex-1 bg-linear-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-semibold py-3 rounded-xl transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/50 flex items-center justify-center gap-2 group disabled:opacity-50"
                                         >
                                             <TrendingUp className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                                            Simpan & Analisis
+                                            {isAnalyzing ? "Menganalisis..." : "Simpan & Analisis"}
                                         </Button>
                                     </div>
                                 </form>
@@ -465,7 +634,7 @@ export default function CekKesehatanPage() {
                         </div>
                     </div>
 
-                    {/* Sidebar - Info & Guidelines */}
+                    {/* Sidebar - BMI Guide & Health Tips */}
                     <div className="space-y-6">
                         {/* BMI Guide */}
                         <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-white/10 to-white/5 backdrop-blur-lg border border-white/20 p-6 shadow-lg">
@@ -546,76 +715,127 @@ export default function CekKesehatanPage() {
                         </div>
                     </div>
                 </div>
-                {/* Result Section */}
+
+                {/* ===== RESULTS SECTION - TEMPORARY, ONLY AFTER SUBMIT ===== */}
                 {result && (
                     <div className="space-y-8 animate-in fade-in-50 duration-500">
-                        <div className="flex items-center gap-3 mb-8">
-                            <div className="w-1 h-8 bg-linear-to-b from-cyan-400 to-blue-400 rounded-full" />
-                            <h2 className="text-3xl font-bold text-white">Hasil Analisis Anda</h2>
-                        </div>
+                        {/* Header */}
 
-                        {/* Metrics Row */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-blue-500/20 to-blue-500/10 backdrop-blur-lg border border-blue-500/30 p-6 shadow-lg hover:border-blue-500/50 transition-all">
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/20 rounded-full blur-3xl" />
-                                <div className="relative z-10">
-                                    <p className="text-blue-200/80 text-sm font-semibold uppercase tracking-wide mb-2">Tinggi Badan</p>
-                                    <p className="text-4xl font-bold text-blue-100">{result.height}</p>
-                                    <p className="text-sm text-blue-200/60 mt-3">cm</p>
+                        {/* Loading state while analyzing */}
+                        {isAnalyzing && (
+                            <div className="flex items-center justify-center py-12">
+                                <div className="text-center space-y-4">
+                                    <Loader className="w-8 h-8 animate-spin text-cyan-400 mx-auto" />
+                                    <p className="text-gray-300">Menganalisis data kesehatan Anda dengan AI...</p>
                                 </div>
                             </div>
+                        )}
 
-                            <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-purple-500/20 to-purple-500/10 backdrop-blur-lg border border-purple-500/30 p-6 shadow-lg hover:border-purple-500/50 transition-all">
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/20 rounded-full blur-3xl" />
-                                <div className="relative z-10">
-                                    <p className="text-purple-200/80 text-sm font-semibold uppercase tracking-wide mb-2">Berat Badan</p>
-                                    <p className="text-4xl font-bold text-purple-100">{result.weight}</p>
-                                    <p className="text-sm text-purple-200/60 mt-3">kg</p>
-                                </div>
-                            </div>
+                        {/* Analysis Results */}
+                        {!isAnalyzing && _riskPrediction && (
+                            <>
+                                {/* BMI & Status Summary Tetap Ditampilkan */}
 
-                            <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-cyan-500/20 to-cyan-500/10 backdrop-blur-lg border border-cyan-500/30 p-6 shadow-lg hover:border-cyan-500/50 transition-all">
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/20 rounded-full blur-3xl" />
-                                <div className="relative z-10">
-                                    <p className="text-cyan-200/80 text-sm font-semibold uppercase tracking-wide mb-2">BMI Anda</p>
-                                    <p className="text-5xl font-bold bg-linear-to-r from-cyan-300 to-blue-300 bg-clip-text text-transparent">{result.bmi.toFixed(1)}</p>
-                                </div>
-                            </div>
-                        </div>
+                                {/* ===== SCREENING RECOMMENDATIONS SECTION ===== */}
+                                {screeningRecommendations.length > 0 && (
+                                    <div className="space-y-6">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-1 h-8 bg-linear-to-b from-blue-400 to-cyan-400 rounded-full" />
+                                            <h3 className="text-3xl font-bold text-white">Rekomendasi Skrining Kesehatan</h3>
+                                        </div>
 
-                        {/* Status Card */}
-                        <div className={`relative overflow-hidden rounded-2xl bg-linear-to-br ${getStatusBgGradient(result.status)} backdrop-blur-lg border p-8 text-center shadow-2xl`}>
-                            <div className="absolute inset-0 opacity-20">
-                                <div className="absolute top-0 right-0 w-64 h-64 rounded-full blur-3xl" />
-                            </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            {screeningRecommendations.map((rec, index) => (
+                                                <div
+                                                    key={index}
+                                                    className="relative overflow-hidden rounded-2xl bg-linear-to-br from-white/10 to-white/5 backdrop-blur-lg border border-white/20 p-6 shadow-lg hover:border-white/40 transition-all"
+                                                >
+                                                    <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/10 rounded-full blur-3xl" />
+                                                    <div className="relative z-10">
+                                                        <div className="flex items-start justify-between mb-4">
+                                                            <div className="flex items-center gap-3">
+                                                                <Stethoscope className="w-5 h-5 text-cyan-400 shrink-0 mt-1" />
+                                                                <h4 className="text-lg font-bold text-white">{rec.type}</h4>
+                                                            </div>
+                                                            <span className={`text-xs font-semibold px-3 py-1 rounded-full border ${getPriorityColor(rec.priority)}`}>
+                                                                {rec.priority}
+                                                            </span>
+                                                        </div>
 
-                            <div className="relative z-10">
-                                <p className="text-gray-300 text-sm mb-4 font-semibold uppercase tracking-widest">Status Kesehatan Anda</p>
-                                <p className={`text-6xl font-black ${getStatusColor(result.status)} mb-6 drop-shadow-lg`}>
-                                    {getStatusText(result.status)}
-                                </p>
-                                <div className="max-w-2xl mx-auto space-y-4">
-                                    <p className="text-gray-200 text-lg leading-relaxed">
-                                        Berdasarkan perhitungan BMI Anda sebesar <span className="font-bold text-white">{result.bmi.toFixed(1)}</span>, status kesehatan Anda masuk dalam kategori <span className="font-bold text-white">{getStatusText(result.status)}</span>.
-                                    </p>
-                                    <p className="text-gray-300 text-sm">
-                                        Untuk informasi lebih detail dan rekomendasi kesehatan yang tepat, silakan konsultasikan dengan profesional kesehatan atau dokter terpercaya.
-                                    </p>
-                                </div>
+                                                        <p className="text-gray-300 mb-4">{rec.description}</p>
 
-                                {/* Quick Action */}
-                                <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+                                                        <div className="space-y-3 border-t border-white/10 pt-4">
+                                                            <div>
+                                                                <p className="text-xs text-gray-400 mb-1">Alasan</p>
+                                                                <p className="text-sm text-gray-200">{rec.reason}</p>
+                                                            </div>
+                                                            {rec.estimatedCost && (
+                                                                <div>
+                                                                    <p className="text-xs text-gray-400 mb-1">Estimasi Biaya</p>
+                                                                    <p className="text-sm text-gray-200">{rec.estimatedCost}</p>
+                                                                </div>
+                                                            )}
+                                                            {rec.location && (
+                                                                <div>
+                                                                    <p className="text-xs text-gray-400 mb-1">Lokasi</p>
+                                                                    <p className="text-sm text-gray-200">{rec.location}</p>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* ===== LIFESTYLE RECOMMENDATIONS SECTION ===== */}
+                                {lifestyleRecommendations.length > 0 && (
+                                    <div className="space-y-6">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-1 h-8 bg-linear-to-b from-green-400 to-emerald-400 rounded-full" />
+                                            <h3 className="text-3xl font-bold text-white">Rekomendasi Gaya Hidup Personalisasi</h3>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            {lifestyleRecommendations.map((category, index) => (
+                                                <div
+                                                    key={index}
+                                                    className="relative overflow-hidden rounded-2xl bg-linear-to-br from-white/10 to-white/5 backdrop-blur-lg border border-white/20 p-6 shadow-lg hover:border-white/40 transition-all"
+                                                >
+                                                    <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/10 rounded-full blur-3xl" />
+                                                    <div className="relative z-10">
+                                                        <div className="flex items-center gap-3 mb-6">
+                                                            <Award className="w-5 h-5 text-green-400" />
+                                                            <h4 className="text-lg font-bold text-white">{category.category}</h4>
+                                                        </div>
+
+                                                        <ul className="space-y-3">
+                                                            {category.tips.map((tip, tipIndex) => (
+                                                                <li key={tipIndex} className="flex gap-3">
+                                                                    <span className="text-green-400 font-bold shrink-0">•</span>
+                                                                    <span className="text-gray-300 text-sm">{tip}</span>
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Quick Action Buttons */}
+                                <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-white/10">
                                     <Button
                                         onClick={() => {
-                                            setFormData({
-                                                height: 0,
-                                                weight: 0,
-                                                bloodPressure: "",
-                                                bloodSugar: undefined,
-                                                cholesterol: undefined,
-                                                notes: "",
-                                            });
                                             setResult(null);
+                                            setRiskPrediction(null);
+                                            setAlerts([]);
+                                            setScreeningRecommendations([]);
+                                            setLifestyleRecommendations([]);
+                                            setRiskLevel("");
+                                            setInterventionRequired(false);
                                         }}
                                         className="px-8 py-3 bg-white/20 hover:bg-white/30 text-white font-semibold rounded-xl backdrop-blur transition-all border border-white/30"
                                     >
@@ -628,8 +848,8 @@ export default function CekKesehatanPage() {
                                         Kembali ke Dashboard
                                     </Button>
                                 </div>
-                            </div>
-                        </div>
+                            </>
+                        )}
                     </div>
                 )}
             </div>

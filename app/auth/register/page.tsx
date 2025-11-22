@@ -66,7 +66,7 @@ export default function RegisterPage() {
                         <div className="flex justify-center">
                             <Image
                                 src="/images/medpredictjkn.png"
-                                alt="MedpredictJKn JKN Logo"
+                                alt="MedpredictJKn Logo"
                                 width={120}
                                 height={120}
                                 priority

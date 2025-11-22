@@ -155,12 +155,15 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // This is a placeholder - implement getChatHistory in chatbot service
+    // Import the getChatHistory function
+    const { getChatHistory } = await import("@/lib/services/chatbot");
+    const chatHistory = await getChatHistory(decoded.userId, 50);
+
     return NextResponse.json(
       {
         success: true,
         message: "Riwayat chat diambil",
-        data: [] as ChatResponse[],
+        data: chatHistory as ChatResponse[],
       } as ApiResponse<ChatResponse[]>,
       { status: 200 }
     );
@@ -170,6 +173,64 @@ export async function GET(request: NextRequest) {
       {
         success: false,
         message: "Terjadi kesalahan",
+        error: String(error),
+      } as ApiResponse<null>,
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const token = extractToken(request.headers.get("authorization"));
+
+    if (!token) {
+      return NextResponse.json(
+        { success: false, message: "Token tidak ditemukan" } as ApiResponse<null>,
+        { status: 401 }
+      );
+    }
+
+    const decoded = verifyToken(token);
+    if (!decoded) {
+      return NextResponse.json(
+        { success: false, message: "Token tidak valid" } as ApiResponse<null>,
+        { status: 401 }
+      );
+    }
+
+    // Get chatId from query params if provided, otherwise delete all
+    const url = new URL(request.url);
+    const chatId = url.searchParams.get("id");
+
+    const { prisma } = await import("@/lib/db");
+
+    if (chatId) {
+      // Delete specific chat
+      await prisma.chatHistory.delete({
+        where: { id: chatId },
+      });
+    } else {
+      // Delete all chats for user
+      await prisma.chatHistory.deleteMany({
+        where: { userId: decoded.userId },
+      });
+    }
+
+    return NextResponse.json(
+      {
+        success: true,
+        message: chatId ? "Chat dihapus" : "Semua chat dihapus",
+        data: null,
+      } as ApiResponse<null>,
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("Delete chat error:", error);
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Gagal menghapus chat",
         error: String(error),
       } as ApiResponse<null>,
       { status: 500 }

@@ -3,9 +3,9 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import { Sidebar } from "@/components/ui/sidebar";
-import { Camera, User, Mail, Phone } from "lucide-react";
+import { ProfileAvatar } from "@/components/ui/profile-avatar";
+import { Camera, Mail, Phone } from "lucide-react";
 
 interface UserData {
     id: string;
@@ -16,9 +16,15 @@ interface UserData {
     profilePhoto?: string;
 }
 
+interface Toast {
+    id: string;
+    message: string;
+    type: 'success' | 'error';
+}
+
 export default function ProfilPage() {
     const router = useRouter();
-    
+
     // Initialize user from localStorage immediately to prevent flickering
     const [user, setUser] = useState<UserData | null>(() => {
         if (typeof window !== 'undefined') {
@@ -35,6 +41,7 @@ export default function ProfilPage() {
         return null;
     });
     const [photoPreview, setPhotoPreview] = useState<string>("");
+    const [toasts, setToasts] = useState<Toast[]>([]);
 
     useEffect(() => {
         let isMounted = true;
@@ -72,6 +79,13 @@ export default function ProfilPage() {
                 const updatedUser: UserData = { ...user, profilePhoto: result };
                 localStorage.setItem("user", JSON.stringify(updatedUser));
                 setUser(updatedUser);
+
+                // Show success toast
+                const toastId = Date.now().toString();
+                setToasts(prev => [...prev, { id: toastId, message: "Foto profil berhasil diperbarui!", type: 'success' }]);
+                setTimeout(() => {
+                    setToasts(prev => prev.filter(t => t.id !== toastId));
+                }, 3000);
             };
             reader.readAsDataURL(file);
         }
@@ -90,13 +104,13 @@ export default function ProfilPage() {
             <div className="fixed bottom-0 right-1/4 w-96 h-96 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none z-0"></div>
 
             {/* Sidebar */}
-            <Sidebar 
+            <Sidebar
                 key={user?.role}
-                onLogout={handleLogout} 
-                userName={user?.name} 
-                userEmail={user?.email} 
-                userRole={user?.role} 
-                profilePhoto={user?.profilePhoto} 
+                onLogout={handleLogout}
+                userName={user?.name}
+                userEmail={user?.email}
+                userRole={user?.role}
+                profilePhoto={user?.profilePhoto}
             />
 
             {/* Main Content */}
@@ -115,6 +129,36 @@ export default function ProfilPage() {
                     </div>
                 </header>
 
+                {/* Toast Notifications */}
+                <div className="fixed top-0 left-1/2 transform -translate-x-1/2 z-50 mt-4 pointer-events-none">
+                    <div className="flex flex-col gap-2">
+                        {toasts.map((toast) => (
+                            <div
+                                key={toast.id}
+                                className={`flex items-center gap-3 px-6 py-3 rounded-lg backdrop-blur-lg border pointer-events-auto transition-all ${toast.type === 'success'
+                                    ? 'bg-green-500/20 border-green-500/40 text-green-300'
+                                    : 'bg-red-500/20 border-red-500/40 text-red-300'
+                                    }`}
+                            >
+                                {toast.type === 'success' ? (
+                                    <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center shrink-0">
+                                        <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                        </svg>
+                                    </div>
+                                ) : (
+                                    <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center shrink-0">
+                                        <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                        </svg>
+                                    </div>
+                                )}
+                                <span className="text-sm font-medium">{toast.message}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
                 {/* Profile Content */}
                 <div className="p-8">
                     <div className="max-w-4xl mx-auto space-y-6">
@@ -126,19 +170,13 @@ export default function ProfilPage() {
                                 <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
                                     {/* Photo Section */}
                                     <div className="relative">
-                                        {photoPreview ? (
-                                            <Image
-                                                src={photoPreview}
-                                                alt={user?.name || "Profile"}
-                                                width={128}
-                                                height={128}
-                                                className="w-32 h-32 rounded-2xl object-cover border-2 border-blue-400/50 shadow-lg"
-                                            />
-                                        ) : (
-                                            <div className="w-32 h-32 bg-linear-to-br from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center border-2 border-blue-400/50 shadow-lg">
-                                                <User className="w-16 h-16 text-white" />
-                                            </div>
-                                        )}
+                                        <ProfileAvatar
+                                            src={photoPreview}
+                                            alt={user?.name || "Profile"}
+                                            name={user?.name || "U"}
+                                            size="lg"
+                                            className="border-2 border-blue-400/50 shadow-lg"
+                                        />
                                         <label className="absolute bottom-0 right-0 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-xl cursor-pointer transition-all shadow-lg">
                                             <Camera className="w-5 h-5" />
                                             <input
@@ -206,7 +244,9 @@ export default function ProfilPage() {
                                 <div className="relative z-10">
                                     <p className="text-gray-400 text-sm mb-3">Bergabung</p>
                                     <p className="text-xl font-bold text-white">{new Date().getFullYear()}</p>
-                                    <p className="text-xs text-gray-400 mt-2">Anggota MedPredict</p>
+                                    <p className="text-xs text-gray-400 mt-2">
+                                        {user?.role === "doctor" ? "Dokter MedpredictJKn" : "Pasien MedpredictJKn"}
+                                    </p>
                                 </div>
                             </div>
 

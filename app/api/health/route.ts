@@ -87,12 +87,16 @@ export async function POST(request: NextRequest) {
         let phoneNumber = user.phone.trim();
         
         // Jika nomor dimulai dengan 0, ganti dengan 62
+        // Format nomor: jika dimulai dengan 0, ganti dengan 62
         if (phoneNumber.startsWith("0")) {
           phoneNumber = "62" + phoneNumber.slice(1);
         }
-        
-        // Jika belum punya 62, tambahkan
-        if (!phoneNumber.startsWith("62")) {
+        // Jika dimulai dengan 62 tapi ada duplikat (62...62), hapus yang depan
+        else if (phoneNumber.startsWith("6262")) {
+          phoneNumber = phoneNumber.slice(2); // Ambil dari index 2 ke depan
+        }
+        // Jika belum punya 62 sama sekali (hanya digit), tambahkan
+        else if (!phoneNumber.startsWith("62") && /^\d+$/.test(phoneNumber)) {
           phoneNumber = "62" + phoneNumber;
         }
 

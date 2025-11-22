@@ -31,6 +31,16 @@ export async function sendWhatsAppNotification(
       phoneNumber = phoneNumber.split("@")[0];
     }
     
+    // Normalize nomor Indonesia
+    // Jika dimulai dengan 0, ganti dengan 62
+    if (phoneNumber.startsWith("0")) {
+      phoneNumber = "62" + phoneNumber.slice(1);
+    }
+    // Jika ada duplikat 6262, hapus duplikat
+    else if (phoneNumber.startsWith("6262")) {
+      phoneNumber = phoneNumber.slice(2);
+    }
+    
     // Validasi nomor Indonesia (harus dimulai dengan 62 dan minimal 10 digit setelah 62)
     if (!phoneNumber.startsWith("62") || phoneNumber.length < 12) {
       console.error(
