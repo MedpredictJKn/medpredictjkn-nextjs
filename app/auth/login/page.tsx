@@ -11,7 +11,7 @@ function LoginContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const resetSuccess = searchParams.get("resetSuccess");
-    
+
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState(resetSuccess ? "Password berhasil direset. Silakan login dengan password baru" : "");
