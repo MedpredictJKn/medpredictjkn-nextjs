@@ -26,6 +26,10 @@ export async function sendWhatsAppNotification(
     // Format nomor: pastikan hanya angka tanpa @c.us untuk WhAPI
     let phoneNumber = payload.phoneNumber.trim();
     
+    // Remove common prefixes/symbols
+    phoneNumber = phoneNumber.replace(/^\+/, ""); // Remove leading +
+    phoneNumber = phoneNumber.replace(/[^\d]/g, ""); // Remove all non-digits
+    
     // Remove @c.us jika ada
     if (phoneNumber.includes("@")) {
       phoneNumber = phoneNumber.split("@")[0];
@@ -40,11 +44,15 @@ export async function sendWhatsAppNotification(
     else if (phoneNumber.startsWith("6262")) {
       phoneNumber = phoneNumber.slice(2);
     }
+    // Jika belum ada 62, tambahkan
+    else if (!phoneNumber.startsWith("62") && /^\d+$/.test(phoneNumber)) {
+      phoneNumber = "62" + phoneNumber;
+    }
     
-    // Validasi nomor Indonesia (harus dimulai dengan 62 dan minimal 10 digit setelah 62)
-    if (!phoneNumber.startsWith("62") || phoneNumber.length < 12) {
+    // Validasi nomor Indonesia (harus dimulai dengan 62 dan 9-13 digit setelah 62)
+    if (!phoneNumber.startsWith("62") || phoneNumber.length < 11 || phoneNumber.length > 15) {
       console.error(
-        `[WhatsApp] Invalid phone number format: ${phoneNumber}. Must start with 62 and have 10-12 digits after it.`
+        `[WhatsApp] Invalid phone number format: ${phoneNumber}. Must start with 62 and have 9-13 digits after it (total 11-15 digits). Length: ${phoneNumber.length}`
       );
       return {
         success: false,
@@ -70,10 +78,11 @@ export async function sendWhatsAppNotification(
 
     console.log(`[WhatsApp] Response status: ${response.status}`, data);
 
-    if (response.ok && (data.sent || data.result)) {
+    // Check if message was sent successfully
+    if (data.sent === true && data.message?.id) {
       return {
         success: true,
-        messageId: data.message?.id || data.result?.id || data.id,
+        messageId: data.message.id,
       };
     }
 

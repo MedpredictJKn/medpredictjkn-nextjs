@@ -25,7 +25,7 @@ async function main() {
         email: doctorEmail,
         password: hashedPassword,
         name: "Dr. Siti Rahmawati",
-        phone: "+6281234567890",
+        phone: process.env.WHAT_PHONE_NUMBER || "628989861351",
         role: "doctor",
       },
     });

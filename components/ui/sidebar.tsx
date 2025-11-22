@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Activity, MessageCircle, LogOut, LayoutDashboard, Users, Stethoscope, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ProfileAvatar } from './profile-avatar';
@@ -18,9 +18,31 @@ interface SidebarProps {
 
 export function Sidebar({ onLogout, userName, userEmail, userRole, profilePhoto }: SidebarProps) {
     const pathname = usePathname();
+    const [isHydrated, setIsHydrated] = useState(false);
 
-    // Memoize nav items to prevent re-renders and flickering
+    // Only compute nav items after hydration to prevent mismatch
     const navItems = useMemo(() => {
+        // Default to patient items on server/initial render
+        if (!isHydrated) {
+            return [
+                {
+                    label: 'Dashboard',
+                    href: '/dashboard',
+                    icon: LayoutDashboard,
+                },
+                {
+                    label: 'Cek Kesehatan',
+                    href: '/cek-kesehatan',
+                    icon: Activity,
+                },
+                {
+                    label: 'Chat AI',
+                    href: '/chat',
+                    icon: MessageCircle,
+                },
+            ];
+        }
+
         // Patient navigation items
         const patientItems = [
             {
@@ -55,7 +77,12 @@ export function Sidebar({ onLogout, userName, userEmail, userRole, profilePhoto 
         ];
 
         return userRole === 'doctor' ? doctorItems : patientItems;
-    }, [userRole]);
+    }, [userRole, isHydrated]);
+
+    // Set hydration flag on mount
+    useEffect(() => {
+        setIsHydrated(true);
+    }, []);
 
     const isActive = (href: string) => pathname === href;
 

@@ -26,18 +26,34 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate phone number format
-    const phoneRegex = /^62\d{9,12}$/;
-    if (!phoneRegex.test(body.to)) {
+    // Validate phone number format - should start with 62 and have 9-13 digits after it
+    const phoneRegex = /^62\d{9,13}$/;
+    let phoneNumber = body.to.toString().trim();
+    
+    console.log(`[WhatsApp API] Received phone: ${phoneNumber}`);
+    
+    // Remove common prefixes/symbols
+    phoneNumber = phoneNumber.replace(/^\+/, ""); // Remove leading +
+    phoneNumber = phoneNumber.replace(/^0/, ""); // Remove leading 0
+    phoneNumber = phoneNumber.replace(/[^\d]/g, ""); // Remove all non-digits
+    
+    // Ensure it starts with 62 (Indonesia country code)
+    if (!phoneNumber.startsWith("62")) {
+      phoneNumber = "62" + phoneNumber;
+    }
+    
+    console.log(`[WhatsApp API] Normalized phone: ${phoneNumber}, matches regex: ${phoneRegex.test(phoneNumber)}`);
+    
+    if (!phoneRegex.test(phoneNumber)) {
       return NextResponse.json(
-        { success: false, error: "Invalid phone number format. Use 62xxxxxxxxxx" },
+        { success: false, error: `Invalid phone number format. Use 62xxxxxxxxxx (got: ${phoneNumber}, length after 62: ${phoneNumber.length - 2})` },
         { status: 400 }
       );
     }
 
     // Send WhatsApp message
     const result = await sendWhatsAppNotification({
-      phoneNumber: body.to,
+      phoneNumber: phoneNumber,
       message: body.body,
     });
 
