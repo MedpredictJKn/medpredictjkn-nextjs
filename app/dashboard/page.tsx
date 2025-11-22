@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Sidebar } from "@/components/ui/sidebar";
+import { useCounterAnimation, useProgressAnimation } from "@/lib/hooks/useCounterAnimation";
 import {
     Activity,
     MessageCircle,
@@ -39,19 +40,28 @@ export default function DashboardPage() {
     const [totalChat, setTotalChat] = useState(0);
     const [alertAktif, setAlertAktif] = useState(0);
     const [latestHealth, setLatestHealth] = useState<{
-        bloodPressure?: string | null;
+        bloodPressure: string | null;
         bmi: number;
-        bloodSugar?: number | null;
-        cholesterol?: number | null;
+        bloodSugar: number | null;
+        cholesterol: number | null;
         createdAt: Date;
     } | null>(null);
     const [wellnessScore, setWellnessScore] = useState(0);
+
+    // Animated counter values
+    const animatedTotalPemeriksaan = useCounterAnimation(totalPemeriksaan, 1500);
+    const animatedTotalChat = useCounterAnimation(totalChat, 1500);
+    const animatedAlertAktif = useCounterAnimation(alertAktif, 1500);
+    const animatedWellnessScore = useCounterAnimation(wellnessScore, 1500);
+    const animatedBMI = useProgressAnimation(latestHealth?.bmi ?? 0, 1500);
+    const animatedBloodSugar = useCounterAnimation(latestHealth?.bloodSugar ?? 0, 1500);
+    const animatedCholesterol = useCounterAnimation(latestHealth?.cholesterol ?? 0, 1500);
 
     useEffect(() => {
         let isMounted = true;
         const storedUser = localStorage.getItem("user");
         const storedToken = localStorage.getItem("token");
-        
+
         if (!storedUser || !storedToken) {
             router.push("/auth/login");
             return;
@@ -104,7 +114,7 @@ export default function DashboardPage() {
                                 if (isMounted && data.data) {
                                     setPatientCount(data.data.length);
                                     // Count patients with health data
-                                    const withHealthData = data.data.filter((p: {latestHealth: Record<string, unknown> | null}) => p.latestHealth).length;
+                                    const withHealthData = data.data.filter((p: { latestHealth: Record<string, unknown> | null }) => p.latestHealth).length;
                                     setActiveMonitoring(withHealthData);
                                 }
                             }
@@ -180,36 +190,36 @@ export default function DashboardPage() {
     const quickStats = isDoctor ? doctorQuickStats : patientQuickStats;
 
     const healthMetrics: HealthMetric[] = latestHealth ? [
-        { 
-            name: "Tekanan Darah", 
-            value: latestHealth.bloodPressure || "N/A", 
-            unit: "mmHg", 
-            status: latestHealth.bloodPressure 
+        {
+            name: "Tekanan Darah",
+            value: latestHealth.bloodPressure || "N/A",
+            unit: "mmHg",
+            status: latestHealth.bloodPressure
                 ? (() => {
                     const [systolic] = latestHealth.bloodPressure.split("/").map(Number);
                     return systolic > 140 || systolic < 90 ? "critical" : systolic > 130 || systolic < 100 ? "warning" : "normal";
                 })()
                 : "normal"
         },
-        { 
-            name: "BMI", 
-            value: latestHealth.bmi.toFixed(1), 
-            unit: "kg/m²", 
+        {
+            name: "BMI",
+            value: latestHealth.bmi.toFixed(1),
+            unit: "kg/m²",
             status: latestHealth.bmi < 18.5 || latestHealth.bmi > 24.9 ? "warning" : "normal"
         },
-        { 
-            name: "Gula Darah", 
-            value: latestHealth.bloodSugar?.toString() || "N/A", 
-            unit: "mg/dL", 
-            status: latestHealth.bloodSugar 
+        {
+            name: "Gula Darah",
+            value: latestHealth.bloodSugar?.toString() || "N/A",
+            unit: "mg/dL",
+            status: latestHealth.bloodSugar
                 ? latestHealth.bloodSugar > 200 || latestHealth.bloodSugar < 70 ? "critical" : latestHealth.bloodSugar > 140 || latestHealth.bloodSugar < 100 ? "warning" : "normal"
                 : "normal"
         },
-        { 
-            name: "Kolesterol", 
-            value: latestHealth.cholesterol?.toString() || "N/A", 
-            unit: "mg/dL", 
-            status: latestHealth.cholesterol 
+        {
+            name: "Kolesterol",
+            value: latestHealth.cholesterol?.toString() || "N/A",
+            unit: "mg/dL",
+            status: latestHealth.cholesterol
                 ? latestHealth.cholesterol > 240 ? "critical" : latestHealth.cholesterol > 200 ? "warning" : "normal"
                 : "normal"
         },
@@ -273,12 +283,12 @@ export default function DashboardPage() {
             <div className="fixed bottom-0 right-1/4 w-96 h-96 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none z-0"></div>
 
             {/* Sidebar */}
-            <Sidebar 
-                key={user?.role} 
-                onLogout={handleLogout} 
-                userName={user?.name} 
-                userEmail={user?.email} 
-                userRole={user?.role} 
+            <Sidebar
+                key={user?.role}
+                onLogout={handleLogout}
+                userName={user?.name}
+                userEmail={user?.email}
+                userRole={user?.role}
             />
 
             {/* Main Content */}
@@ -309,6 +319,12 @@ export default function DashboardPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {quickStats.map((stat, idx) => {
                             const Icon = stat.icon;
+                            let displayValue = stat.value;
+
+                            if (idx === 0) displayValue = String(animatedTotalPemeriksaan);
+                            else if (idx === 1) displayValue = String(animatedTotalChat);
+                            else if (idx === 2) displayValue = String(animatedAlertAktif);
+
                             return (
                                 <div
                                     key={idx}
@@ -321,7 +337,7 @@ export default function DashboardPage() {
                                             </div>
                                         </div>
                                         <p className="text-gray-400 text-xs font-semibold uppercase tracking-wide">{stat.label}</p>
-                                        <p className="text-3xl font-bold text-white mt-2">{stat.value}</p>
+                                        <p className="text-3xl font-bold text-white mt-2">{displayValue}</p>
                                     </div>
                                 </div>
                             );
@@ -330,94 +346,93 @@ export default function DashboardPage() {
 
                     {/* Patient-only: Health Status & Wellness */}
                     {!isDoctor && (
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        {/* Health Metrics */}
-                        <div className="lg:col-span-2">
-                            <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-white/10 to-white/5 backdrop-blur-lg border border-white/20 p-10 min-h-80">
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl" />
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            {/* Health Metrics */}
+                            <div className="lg:col-span-2">
+                                <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-white/10 to-white/5 backdrop-blur-lg border border-white/20 p-10 min-h-80">
+                                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl" />
 
-                                <div className="relative z-10">
-                                    <div className="flex items-center gap-3 mb-8">
-                                        <Heart className="w-6 h-6 text-red-400" />
-                                        <h2 className="text-2xl font-bold text-white">Status Kesehatan</h2>
+                                    <div className="relative z-10">
+                                        <div className="flex items-center gap-3 mb-8">
+                                            <Heart className="w-6 h-6 text-red-400" />
+                                            <h2 className="text-2xl font-bold text-white">Status Kesehatan</h2>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-5">
+                                            {healthMetrics.map((metric, idx) => (
+                                                <div
+                                                    key={idx}
+                                                    className="p-5 rounded-lg bg-white/5 border border-white/10 hover:border-white/20 transition-all duration-300"
+                                                >
+                                                    <p className="text-gray-400 text-xs font-semibold uppercase">{metric.name}</p>
+                                                    <div className="flex items-baseline gap-2 mt-4 mb-4">
+                                                        <p className="text-3xl font-bold text-white">{metric.value}</p>
+                                                        <p className="text-xs text-gray-500">{metric.unit}</p>
+                                                    </div>
+                                                    <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                                                        <div
+                                                            className={`h-full ${metric.status === "normal"
+                                                                ? "bg-green-500"
+                                                                : metric.status === "warning"
+                                                                    ? "bg-yellow-500"
+                                                                    : "bg-red-500"
+                                                                }`}
+                                                            style={{
+                                                                width: metric.status === "normal" ? "100%" : metric.status === "warning" ? "75%" : "50%",
+                                                            }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
+                                </div>
+                            </div>
 
-                                    <div className="grid grid-cols-2 gap-5">
-                                        {healthMetrics.map((metric, idx) => (
+                            {/* Wellness & Cek Kesehatan */}
+                            <div className="flex flex-col gap-6">
+                                {/* Wellness Score */}
+                                <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-white/10 to-white/5 backdrop-blur-lg border border-white/20 p-6 flex-1">
+                                    <div className="absolute top-0 right-0 w-20 h-20 bg-green-500/10 rounded-full blur-2xl" />
+
+                                    <div className="relative z-10 h-full flex flex-col">
+                                        <p className="text-gray-400 text-sm font-semibold uppercase tracking-wide mb-3">Wellness Score</p>
+                                        <div className="text-4xl font-bold text-white mb-4">{wellnessScore}/100</div>
+                                        <div className="h-2 bg-white/10 rounded-full overflow-hidden mb-3">
                                             <div
-                                                key={idx}
-                                                className="p-5 rounded-lg bg-white/5 border border-white/10 hover:border-white/20 transition-all duration-300"
-                                            >
-                                                <p className="text-gray-400 text-xs font-semibold uppercase">{metric.name}</p>
-                                                <div className="flex items-baseline gap-2 mt-4 mb-4">
-                                                    <p className="text-3xl font-bold text-white">{metric.value}</p>
-                                                    <p className="text-xs text-gray-500">{metric.unit}</p>
-                                                </div>
-                                                <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
-                                                    <div
-                                                        className={`h-full ${metric.status === "normal"
-                                                            ? "bg-green-500"
-                                                            : metric.status === "warning"
-                                                                ? "bg-yellow-500"
-                                                                : "bg-red-500"
-                                                            }`}
-                                                        style={{
-                                                            width: metric.status === "normal" ? "100%" : metric.status === "warning" ? "75%" : "50%",
-                                                        }}
-                                                    />
-                                                </div>
-                                            </div>
-                                        ))}
+                                                className="h-full bg-linear-to-r from-green-500 to-emerald-500"
+                                                style={{ width: `${wellnessScore}%` }}
+                                            />
+                                        </div>
+                                        <p className={`text-xs font-semibold mt-auto ${wellnessScore >= 80 ? "text-green-300" : wellnessScore >= 60 ? "text-yellow-300" : "text-red-300"
+                                            }`}>
+                                            {wellnessScore >= 80 ? "Sangat Baik!" : wellnessScore >= 60 ? "Baik" : "Perlu Perhatian"}
+                                        </p>
                                     </div>
                                 </div>
+
+                                {/* Cek Kesehatan Link */}
+                                <Link
+                                    href="/cek-kesehatan"
+                                    className="relative overflow-hidden rounded-2xl bg-linear-to-br from-white/10 to-white/5 backdrop-blur-lg border border-white/20 p-6 hover:border-white/40 hover:shadow-lg transition-all duration-300 block flex-1"
+                                >
+                                    <div className="absolute top-0 right-0 w-20 h-20 bg-red-500/10 rounded-full blur-2xl" />
+
+                                    <div className="relative z-10 h-full flex flex-col">
+                                        <div className="flex items-center gap-2 mb-4">
+                                            <Heart className="w-5 h-5 text-red-400" />
+                                            <h3 className="font-semibold text-white">Cek Kesehatan</h3>
+                                        </div>
+                                        <p className="text-gray-400 text-sm mb-5 flex-1">Periksa BMI, tekanan darah, dan data kesehatan Anda</p>
+
+                                        <div className="flex items-center text-red-400 text-sm font-semibold gap-2 group-hover:gap-3 transition-all duration-300 mt-auto">
+                                            Mulai Pemeriksaan
+                                            <ArrowRight className="w-4 h-4" />
+                                        </div>
+                                    </div>
+                                </Link>
                             </div>
                         </div>
-
-                        {/* Wellness & Cek Kesehatan */}
-                        <div className="flex flex-col gap-6">
-                            {/* Wellness Score */}
-                            <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-white/10 to-white/5 backdrop-blur-lg border border-white/20 p-6 flex-1">
-                                <div className="absolute top-0 right-0 w-20 h-20 bg-green-500/10 rounded-full blur-2xl" />
-
-                                <div className="relative z-10 h-full flex flex-col">
-                                    <p className="text-gray-400 text-sm font-semibold uppercase tracking-wide mb-3">Wellness Score</p>
-                                    <div className="text-4xl font-bold text-white mb-4">{wellnessScore}/100</div>
-                                    <div className="h-2 bg-white/10 rounded-full overflow-hidden mb-3">
-                                        <div 
-                                            className="h-full bg-linear-to-r from-green-500 to-emerald-500" 
-                                            style={{ width: `${wellnessScore}%` }}
-                                        />
-                                    </div>
-                                    <p className={`text-xs font-semibold mt-auto ${
-                                        wellnessScore >= 80 ? "text-green-300" : wellnessScore >= 60 ? "text-yellow-300" : "text-red-300"
-                                    }`}>
-                                        {wellnessScore >= 80 ? "Sangat Baik!" : wellnessScore >= 60 ? "Baik" : "Perlu Perhatian"}
-                                    </p>
-                                </div>
-                            </div>
-
-                            {/* Cek Kesehatan Link */}
-                            <Link
-                                href="/cek-kesehatan"
-                                className="relative overflow-hidden rounded-2xl bg-linear-to-br from-white/10 to-white/5 backdrop-blur-lg border border-white/20 p-6 hover:border-white/40 hover:shadow-lg transition-all duration-300 block flex-1"
-                            >
-                                <div className="absolute top-0 right-0 w-20 h-20 bg-red-500/10 rounded-full blur-2xl" />
-
-                                <div className="relative z-10 h-full flex flex-col">
-                                    <div className="flex items-center gap-2 mb-4">
-                                        <Heart className="w-5 h-5 text-red-400" />
-                                        <h3 className="font-semibold text-white">Cek Kesehatan</h3>
-                                    </div>
-                                    <p className="text-gray-400 text-sm mb-5 flex-1">Periksa BMI, tekanan darah, dan data kesehatan Anda</p>
-
-                                    <div className="flex items-center text-red-400 text-sm font-semibold gap-2 group-hover:gap-3 transition-all duration-300 mt-auto">
-                                        Mulai Pemeriksaan
-                                        <ArrowRight className="w-4 h-4" />
-                                    </div>
-                                </div>
-                            </Link>
-                        </div>
-                    </div>
                     )}
 
                     {/* Services Section */}
