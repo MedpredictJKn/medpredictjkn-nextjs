@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { Sidebar } from "@/components/ui/sidebar";
 import { Camera, User, Mail, Phone } from "lucide-react";
 
@@ -17,7 +18,22 @@ interface UserData {
 
 export default function ProfilPage() {
     const router = useRouter();
-    const [user, setUser] = useState<UserData | null>(null);
+    
+    // Initialize user from localStorage immediately to prevent flickering
+    const [user, setUser] = useState<UserData | null>(() => {
+        if (typeof window !== 'undefined') {
+            const storedUser = localStorage.getItem("user");
+            if (storedUser) {
+                try {
+                    return JSON.parse(storedUser);
+                } catch (err) {
+                    console.error("Error parsing user data:", err);
+                    return null;
+                }
+            }
+        }
+        return null;
+    });
     const [photoPreview, setPhotoPreview] = useState<string>("");
 
     useEffect(() => {
@@ -103,7 +119,7 @@ export default function ProfilPage() {
                 <div className="p-8">
                     <div className="max-w-4xl mx-auto space-y-6">
                         {/* Profile Header Card */}
-                        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-lg border border-white/20 p-8">
+                        <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-white/10 to-white/5 backdrop-blur-lg border border-white/20 p-8">
                             <div className="absolute top-0 right-0 w-40 h-40 bg-blue-500/10 rounded-full blur-3xl" />
 
                             <div className="relative z-10">
@@ -111,9 +127,11 @@ export default function ProfilPage() {
                                     {/* Photo Section */}
                                     <div className="relative">
                                         {photoPreview ? (
-                                            <img
+                                            <Image
                                                 src={photoPreview}
-                                                alt={user?.name}
+                                                alt={user?.name || "Profile"}
+                                                width={128}
+                                                height={128}
                                                 className="w-32 h-32 rounded-2xl object-cover border-2 border-blue-400/50 shadow-lg"
                                             />
                                         ) : (
@@ -135,7 +153,9 @@ export default function ProfilPage() {
                                     {/* Info Section */}
                                     <div className="flex-1 text-center md:text-left">
                                         <h2 className="text-3xl font-bold text-white mb-2">{user?.name}</h2>
-                                        <p className="text-cyan-400 font-semibold mb-6">Pengguna Aktif</p>
+                                        <p className="text-cyan-400 font-semibold mb-6">
+                                            {user?.role === "doctor" ? "Dokter" : "Pasien"}
+                                        </p>
 
                                         <div className="space-y-4">
                                             <div className="flex items-center gap-3">
@@ -168,7 +188,7 @@ export default function ProfilPage() {
                         {/* Account Status Card */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             {/* Status */}
-                            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-lg border border-white/20 p-6">
+                            <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-white/10 to-white/5 backdrop-blur-lg border border-white/20 p-6">
                                 <div className="absolute top-0 right-0 w-20 h-20 bg-green-500/10 rounded-full blur-2xl" />
                                 <div className="relative z-10">
                                     <p className="text-gray-400 text-sm mb-3">Status Akun</p>
@@ -181,7 +201,7 @@ export default function ProfilPage() {
                             </div>
 
                             {/* Member Since */}
-                            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-lg border border-white/20 p-6">
+                            <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-white/10 to-white/5 backdrop-blur-lg border border-white/20 p-6">
                                 <div className="absolute top-0 right-0 w-20 h-20 bg-blue-500/10 rounded-full blur-2xl" />
                                 <div className="relative z-10">
                                     <p className="text-gray-400 text-sm mb-3">Bergabung</p>
@@ -191,59 +211,80 @@ export default function ProfilPage() {
                             </div>
 
                             {/* Quick Links */}
-                            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-lg border border-white/20 p-6">
+                            <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-white/10 to-white/5 backdrop-blur-lg border border-white/20 p-6">
                                 <div className="absolute top-0 right-0 w-20 h-20 bg-purple-500/10 rounded-full blur-2xl" />
                                 <div className="relative z-10 space-y-3">
                                     <p className="text-gray-400 text-sm mb-4">Menu Cepat</p>
-                                    <Link
-                                        href="/cek-kesehatan"
-                                        className="block text-sm text-cyan-400 hover:text-cyan-300 font-medium transition-colors"
-                                    >
-                                        Cek Kesehatan
-                                    </Link>
-                                    <Link
-                                        href="/chat"
-                                        className="block text-sm text-cyan-400 hover:text-cyan-300 font-medium transition-colors"
-                                    >
-                                        Chat AI
-                                    </Link>
-                                    <button
-                                        onClick={handleLogout}
-                                        className="block w-full text-left text-sm text-red-400 hover:text-red-300 font-medium transition-colors"
-                                    >
-                                        Keluar Akun
-                                    </button>
+                                    {user?.role === "doctor" ? (
+                                        <>
+                                            <Link
+                                                href="/doctor/monitoring"
+                                                className="block text-sm text-cyan-400 hover:text-cyan-300 font-medium transition-colors"
+                                            >
+                                                Monitoring Pasien
+                                            </Link>
+                                            <button
+                                                onClick={handleLogout}
+                                                className="block w-full text-left text-sm text-red-400 hover:text-red-300 font-medium transition-colors"
+                                            >
+                                                Keluar Akun
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Link
+                                                href="/cek-kesehatan"
+                                                className="block text-sm text-cyan-400 hover:text-cyan-300 font-medium transition-colors"
+                                            >
+                                                Cek Kesehatan
+                                            </Link>
+                                            <Link
+                                                href="/chat"
+                                                className="block text-sm text-cyan-400 hover:text-cyan-300 font-medium transition-colors"
+                                            >
+                                                Chat AI
+                                            </Link>
+                                            <button
+                                                onClick={handleLogout}
+                                                className="block w-full text-left text-sm text-red-400 hover:text-red-300 font-medium transition-colors"
+                                            >
+                                                Keluar Akun
+                                            </button>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         </div>
 
-                        {/* Additional Info Cards */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {/* Health Data */}
-                            <Link
-                                href="/cek-kesehatan"
-                                className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-lg border border-white/20 p-6 hover:border-white/40 hover:shadow-lg transition-all duration-300"
-                            >
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/10 rounded-full blur-3xl" />
-                                <div className="relative z-10">
-                                    <h3 className="text-lg font-semibold text-white mb-2">Data Kesehatan</h3>
-                                    <p className="text-gray-400 text-sm mb-4">Lihat dan kelola data kesehatan Anda</p>
-                                    <span className="text-cyan-400 text-sm font-medium flex items-center gap-1">
-                                        Buka →
-                                    </span>
-                                </div>
-                            </Link>
+                        {/* Additional Info Cards - Only for Patients */}
+                        {user?.role !== "doctor" && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {/* Health Data */}
+                                <Link
+                                    href="/cek-kesehatan"
+                                    className="group relative overflow-hidden rounded-2xl bg-linear-to-br from-white/10 to-white/5 backdrop-blur-lg border border-white/20 p-6 hover:border-white/40 hover:shadow-lg transition-all duration-300"
+                                >
+                                    <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/10 rounded-full blur-3xl" />
+                                    <div className="relative z-10">
+                                        <h3 className="text-lg font-semibold text-white mb-2">Data Kesehatan</h3>
+                                        <p className="text-gray-400 text-sm mb-4">Lihat dan kelola data kesehatan Anda</p>
+                                        <span className="text-cyan-400 text-sm font-medium flex items-center gap-1">
+                                            Buka →
+                                        </span>
+                                    </div>
+                                </Link>
 
-                            {/* Settings */}
-                            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-lg border border-white/20 p-6">
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl" />
-                                <div className="relative z-10">
-                                    <h3 className="text-lg font-semibold text-white mb-2">Pengaturan Privasi</h3>
-                                    <p className="text-gray-400 text-sm mb-4">Kelola preferensi dan privasi akun Anda</p>
-                                    <span className="text-gray-500 text-sm font-medium">Segera hadir</span>
+                                {/* Settings */}
+                                <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-white/10 to-white/5 backdrop-blur-lg border border-white/20 p-6">
+                                    <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl" />
+                                    <div className="relative z-10">
+                                        <h3 className="text-lg font-semibold text-white mb-2">Pengaturan Privasi</h3>
+                                        <p className="text-gray-400 text-sm mb-4">Kelola preferensi dan privasi akun Anda</p>
+                                        <span className="text-gray-500 text-sm font-medium">Segera hadir</span>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        )}
 
                         {/* Photo Upload Hint */}
                         <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-blue-500/10 to-cyan-500/10 backdrop-blur-lg border border-blue-500/20 p-6">
