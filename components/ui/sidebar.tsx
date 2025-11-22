@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
+import { useMemo } from 'react';
 import { Activity, MessageCircle, LogOut, LayoutDashboard, Users, Stethoscope, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -17,40 +18,44 @@ interface SidebarProps {
 export function Sidebar({ onLogout, userName, userEmail, userRole, profilePhoto }: SidebarProps) {
     const pathname = usePathname();
 
-    // Patient navigation items
-    const patientNavItems = [
-        {
-            label: 'Dashboard',
-            href: '/dashboard',
-            icon: LayoutDashboard,
-        },
-        {
-            label: 'Cek Kesehatan',
-            href: '/cek-kesehatan',
-            icon: Activity,
-        },
-        {
-            label: 'Chat AI',
-            href: '/chat',
-            icon: MessageCircle,
-        },
-    ];
+    // Memoize nav items to prevent re-renders and flickering
+    const navItems = useMemo(() => {
+        // Patient navigation items
+        const patientItems = [
+            {
+                label: 'Dashboard',
+                href: '/dashboard',
+                icon: LayoutDashboard,
+            },
+            {
+                label: 'Cek Kesehatan',
+                href: '/cek-kesehatan',
+                icon: Activity,
+            },
+            {
+                label: 'Chat AI',
+                href: '/chat',
+                icon: MessageCircle,
+            },
+        ];
 
-    // Doctor navigation items
-    const doctorNavItems = [
-        {
-            label: 'Dashboard',
-            href: '/dashboard',
-            icon: LayoutDashboard,
-        },
-        {
-            label: 'Monitoring',
-            href: '/doctor/monitoring',
-            icon: Users,
-        },
-    ];
+        // Doctor navigation items
+        const doctorItems = [
+            {
+                label: 'Dashboard',
+                href: '/dashboard',
+                icon: LayoutDashboard,
+            },
+            {
+                label: 'Monitoring',
+                href: '/doctor/monitoring',
+                icon: Users,
+            },
+        ];
 
-    const navItems = userRole === 'doctor' ? doctorNavItems : patientNavItems;
+        return userRole === 'doctor' ? doctorItems : patientItems;
+    }, [userRole]);
+
     const isActive = (href: string) => pathname === href;
 
     return (
