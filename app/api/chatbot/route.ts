@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
 
     const decoded = verifyToken(token);
     
-    if (!decoded) {
+    if (!decoded || !decoded.userId) {
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
@@ -64,12 +64,29 @@ export async function POST(request: NextRequest) {
       response = await callGeminiChatbot(body.message);
     }
 
+    // Validate user exists before saving
+    const { prisma } = await import("@/lib/db");
+    const userExists = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+    });
+
+    if (!userExists) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "User tidak ditemukan. Silakan login kembali.",
+        },
+        { status: 404 }
+      );
+    }
+
     // Save to database
     const chatData = await saveChatHistory(
       decoded.userId,
       body.message,
       response,
-      source as "fastapi" | "gemini"
+      source as "fastapi" | "gemini",
+      body.sessionId
     ) as ChatResponse | null;
 
     if (!chatData) {
@@ -100,6 +117,18 @@ export async function POST(request: NextRequest) {
     console.error("Chatbot error:", error);
     
     const errorString = String(error);
+    
+    // Handle foreign key constraint error (user not found in database)
+    if (errorString.includes("P2003") || errorString.includes("Foreign key constraint")) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "User tidak valid. Silakan login kembali.",
+          error: "Foreign key constraint",
+        } as ApiResponse<null>,
+        { status: 401 }
+      );
+    }
     
     // Handle connection pool exhaustion
     if (errorString.includes("P2024") || errorString.includes("connection pool")) {

@@ -185,6 +185,7 @@ export default function ChatPage() {
                 body: JSON.stringify({
                     message: messageText,
                     source: "gemini",
+                    sessionId: currentSessionId,
                 }),
             });
 
@@ -257,8 +258,8 @@ export default function ChatPage() {
                                     key={chat.id}
                                     onClick={() => loadChatFromHistory(chat)}
                                     className={`w-full text-left p-3 rounded-lg transition-all ${selectedChatId === chat.id
-                                            ? "bg-purple-600/30 border border-purple-500/50 text-white"
-                                            : "bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10"
+                                        ? "bg-purple-600/30 border border-purple-500/50 text-white"
+                                        : "bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10"
                                         }`}
                                 >
                                     <p className="text-sm font-medium truncate">{chat.message.substring(0, 40)}...</p>
@@ -288,7 +289,7 @@ export default function ChatPage() {
             {/* Main Content */}
             <div className="flex-1 flex flex-col overflow-hidden">
                 {/* Header */}
-                <header className="sticky top-0 z-40 backdrop-blur-xl bg-white/5 border-b border-white/10 shrink-0">
+                <header className="shrink-0 backdrop-blur-xl bg-white/5 border-b border-white/10">
                     <div className="h-[70px] px-8 flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <div className="bg-linear-to-r from-purple-500 to-pink-500 p-2 rounded-lg">

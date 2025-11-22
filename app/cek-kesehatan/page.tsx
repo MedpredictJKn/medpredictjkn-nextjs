@@ -391,13 +391,13 @@ export default function CekKesehatanPage() {
     }
 
     return (
-        <div className="min-h-screen bg-linear-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
+        <div className="min-h-screen bg-linear-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden flex flex-col">
             {/* Background Effects */}
             <div className="fixed top-0 left-1/4 w-96 h-96 bg-purple-500/15 rounded-full blur-3xl pointer-events-none z-0" />
             <div className="fixed bottom-0 right-1/4 w-96 h-96 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none z-0" />
 
             {/* Header */}
-            <header className="sticky top-0 z-40 backdrop-blur-xl bg-white/5 border-b border-white/10">
+            <header className="shrink-0 backdrop-blur-xl bg-white/5 border-b border-white/10">
                 <div className="h-[70px] px-8 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <div className="bg-linear-to-r from-blue-500 to-cyan-500 p-2 rounded-lg">
@@ -451,8 +451,9 @@ export default function CekKesehatanPage() {
                 </div>
             </div>
 
-            {/* Page Content */}
-            <div className="p-8 space-y-8 relative z-10">
+            {/* Page Content - Scrollable */}
+            <div className="flex-1 overflow-y-auto">
+                <div className="p-8 space-y-8 relative z-10">
                 {/* Messages */}
                 {error && (
                     <div className="flex items-start gap-3 p-4 rounded-xl bg-red-500/20 border border-red-500/40 backdrop-blur-lg animate-in">
@@ -852,6 +853,7 @@ export default function CekKesehatanPage() {
                         )}
                     </div>
                 )}
+            </div>
             </div>
         </div>
     );

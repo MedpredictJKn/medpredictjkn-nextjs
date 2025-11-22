@@ -17,6 +17,7 @@ export interface HealthCheckPayload {
 export interface ChatPayload {
   message: string;
   source?: "fastapi" | "gemini";
+  sessionId?: string;
 }
 
 export interface ApiResponse<T> {
@@ -56,6 +57,7 @@ export interface HealthData {
 export interface ChatHistory {
   id: string;
   userId: string;
+  sessionId: string;
   message: string;
   response: string;
   source: string;
