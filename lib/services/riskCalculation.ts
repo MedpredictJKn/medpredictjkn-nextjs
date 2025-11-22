@@ -168,6 +168,7 @@ export function calculateCoronaryHeartRisk(factors: RiskFactors): number {
 }
 
 // Stroke Risk Calculation
+// Stroke Risk Calculation
 export function calculateStrokeRisk(factors: RiskFactors): number {
   let score = 0;
 
@@ -180,7 +181,11 @@ export function calculateStrokeRisk(factors: RiskFactors): number {
 
   // Hypertension (strongest predictor)
   if (factors.hasHypertension) score += 3;
-  if (factors.bloodPressure?.systolic! >= 140) score += 2;
+  
+  // ✅ FIX: Proper null checking
+  if (factors.bloodPressure && factors.bloodPressure.systolic >= 140) {
+    score += 2;
+  }
 
   // Diabetes
   if (factors.hasDiabetes) score += 2;
