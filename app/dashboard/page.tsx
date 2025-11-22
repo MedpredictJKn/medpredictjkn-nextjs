@@ -41,6 +41,7 @@ export default function DashboardPage() {
     const [totalPemeriksaan, setTotalPemeriksaan] = useState(0);
     const [totalChat, setTotalChat] = useState(0);
     const [alertAktif, setAlertAktif] = useState(0);
+    const [totalMessagesSent, setTotalMessagesSent] = useState(0);
     const [latestHealth, setLatestHealth] = useState<{
         bloodPressure: string | null;
         bmi: number;
@@ -70,6 +71,7 @@ export default function DashboardPage() {
     // 3. Doctor Stats
     const animatedPatientCount = useCounterAnimation(patientCount, 1500);
     const animatedActiveMonitoring = useCounterAnimation(activeMonitoring, 1500);
+    const animatedMessagesSent = useCounterAnimation(totalMessagesSent, 1500);
 
     // 4. Health Metrics Lainnya (Patient)
     const animatedWellnessScore = useCounterAnimation(wellnessScore, 2000);
@@ -143,7 +145,29 @@ export default function DashboardPage() {
                         }
                     };
 
+                    // Fetch total messages sent
+                    const fetchMessageStats = async () => {
+                        try {
+                            const response = await fetch("/api/doctor/messages/count", {
+                                headers: {
+                                    "Authorization": `Bearer ${storedToken}`,
+                                    "Cache-Control": "no-cache"
+                                },
+                            });
+
+                            if (response.ok) {
+                                const data = await response.json();
+                                if (isMounted && data.data) {
+                                    setTotalMessagesSent(data.data.totalMessagesSent);
+                                }
+                            }
+                        } catch (err) {
+                            console.error("Error fetching message stats:", err);
+                        }
+                    };
+
                     fetchDoctorStats();
+                    fetchMessageStats();
                 }
             }
         } catch (err) {
@@ -201,7 +225,7 @@ export default function DashboardPage() {
         },
         {
             label: "Pesan Terkirim",
-            value: 45, 
+            value: animatedMessagesSent, 
             icon: MessageCircle,
             color: "bg-blue-500",
         },
